@@ -1,0 +1,1 @@
+"""NepalTrip AI package."""
