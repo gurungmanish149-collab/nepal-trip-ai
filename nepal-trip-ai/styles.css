@@ -111,6 +111,7 @@ body { background: #eef1ed; }
 .destination-grid { max-width: 1300px; margin: 0 auto; grid-template-columns: 1.35fr 1fr 1fr; }
 .destination-card { height: 270px; }
 .card-content h3 { font-size: clamp(1.8rem, 2.8vw, 2.7rem); }
+.card-description { margin: -5px 0 0; max-width: 190px; color: rgba(255,255,255,.82); font-size: 11px; line-height: 1.35; }
 .trust-strip { grid-template-columns: repeat(3, 1fr) 1.3fr; padding: 25px 8vw; background: #eef1ed; border-top: 1px solid #dce2dc; border-bottom: 1px solid #dce2dc; }
 .trust-strip div { color: var(--ink); border-color: #cfd8d1; }
 .trust-strip span { color: #64746f; }
