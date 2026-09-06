@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sign in to your Himalaya travel planner." />
+  <title>Sign in | Himalaya</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-layout">
+    <section class="auth-visual" aria-label="Himalayan travel inspiration">
+      <a class="auth-brand brand" href="index.html" aria-label="Return to Himalaya home">
+        <span class="brand-mark">H</span>
+        <span>himalaya<span class="brand-dot">.</span></span>
+      </a>
+      <div class="auth-visual-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> Your Nepal trip, together</p>
+        <h1>Keep your<br /><em>journey close.</em></h1>
+        <p>Save places, shape your route, and pick up your next adventure exactly where you left it.</p>
+      </div>
+      <span class="auth-location">Kathmandu · Nepal</span>
+    </section>
+
+    <section class="auth-panel" aria-labelledby="signin-title">
+      <a class="auth-back" href="index.html">← <span>Back to explore</span></a>
+      <div class="auth-form-wrap">
+        <p class="auth-kicker">Welcome back</p>
+        <h2 id="signin-title">Sign in to<br /><em>Himalaya.</em></h2>
+        <p class="auth-intro">Your saved trips and favorite places are waiting.</p>
+        <form class="auth-form" id="signin-form">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <div class="password-label-row">
+            <label for="password">Password</label>
+            <a href="#forgot-password">Forgot password?</a>
+          </div>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+          <label class="remember-option"><input type="checkbox" name="remember" /> <span>Remember me</span></label>
+          <button class="auth-submit" type="submit">Sign in <span>→</span></button>
+          <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="auth-switch">New to Himalaya? <a href="#sign-up">Create an account</a></p>
+      </div>
+      <p class="auth-footer">© 2025 Himalaya · Travel deeper. Feel more.</p>
+    </section>
+  </main>
+  <script>
+    const signInForm = document.querySelector('#signin-form');
+    const authStatus = document.querySelector('#auth-status');
+
+    signInForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      authStatus.textContent = 'Sign-in will connect here when authentication is added.';
+    });
+  </script>
+</body>
+</html>
