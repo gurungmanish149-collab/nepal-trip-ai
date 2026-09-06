@@ -7,7 +7,7 @@
   <title>Himalaya | Find your Nepal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -16,55 +16,63 @@
       <span class="brand-mark">H</span>
       <span>himalaya<span class="brand-dot">.</span></span>
     </a>
-    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
-      <a class="active" href="#explore">Explore</a>
-      <a href="#how-it-works">How it works</a>
-      <a href="#stories">Stories</a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation" data-i18n-aria="mainNavLabel">
+      <a class="active" href="#explore" data-i18n="explore">Explore</a>
+      <a href="#how-it-works" data-i18n="howItWorks">How it works</a>
+      <a href="#stories" data-i18n="stories">Stories</a>
     </nav>
     <div class="header-actions">
-      <button class="language-button" type="button" aria-label="Select language">EN <span>⌄</span></button>
-      <button class="sign-in" type="button">Sign in</button>
-      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+      <div class="language-picker">
+        <button class="language-button" id="language-button" type="button" aria-label="Select language" aria-haspopup="true" aria-expanded="false"><span id="current-language">EN</span> <span>⌄</span></button>
+        <div class="language-menu" id="language-menu" role="menu">
+          <button type="button" role="menuitem" data-language="en">English</button>
+          <button type="button" role="menuitem" data-language="ja">日本語</button>
+          <button type="button" role="menuitem" data-language="zh">中文</button>
+          <button type="button" role="menuitem" data-language="ko">한국어</button>
+        </div>
+      </div>
+      <button class="sign-in" type="button" data-i18n="signIn">Sign in</button>
+      <button class="menu-toggle" type="button" aria-label="Open menu" data-i18n-aria="openMenu" aria-expanded="false">☰</button>
     </div>
   </header>
 
   <main id="top">
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-content">
-        <p class="eyebrow"><span class="eyebrow-line"></span> Your intelligent Nepal guide</p>
-        <h1 id="hero-title">Find the Nepal<br /><em>that calls you.</em></h1>
-        <p class="hero-copy">From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.</p>
+        <p class="eyebrow"><span class="eyebrow-line"></span> <span data-i18n="heroEyebrow">Your intelligent Nepal guide</span></p>
+        <h1 id="hero-title" data-i18n-html="heroTitle">Find the Nepal<br /><em>that calls you.</em></h1>
+        <p class="hero-copy" data-i18n="heroCopy">From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.</p>
         <div class="hero-buttons">
-          <a class="primary-button" href="#explore">Start exploring <span>↗</span></a>
-          <button class="play-button" type="button" aria-label="Watch the Nepal story"><span class="play-icon">▶</span> See the story</button>
+          <a class="primary-button" href="#explore"><span data-i18n="startExploring">Start exploring</span> <span>↗</span></a>
+          <button class="play-button" type="button" aria-label="Watch the Nepal story" data-i18n-aria="watchStory"><span class="play-icon">▶</span> <span data-i18n="seeStory">See the story</span></button>
         </div>
       </div>
       <div class="hero-note">
         <span class="hero-note-icon">✦</span>
-        <span>Built for curious<br />travellers</span>
+        <span data-i18n-html="heroNote">Built for curious<br />travellers</span>
       </div>
-      <div class="scroll-hint"><span>Scroll to explore</span><span class="scroll-line"></span></div>
+      <div class="scroll-hint"><span data-i18n="scrollToExplore">Scroll to explore</span><span class="scroll-line"></span></div>
     </section>
 
     <section class="explore-section" id="explore" aria-labelledby="explore-title">
       <div class="section-heading">
         <div>
-          <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span> Curated for you</p>
-          <h2 id="explore-title">Where will you<br /><em>go next?</em></h2>
+          <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span> <span data-i18n="curatedForYou">Curated for you</span></p>
+          <h2 id="explore-title" data-i18n-html="exploreTitle">Where will you<br /><em>go next?</em></h2>
         </div>
-        <p class="section-intro">Tell us what moves you. We’ll help you find a Nepal that feels like it was made just for you.</p>
+        <p class="section-intro" data-i18n="sectionIntro">Tell us what moves you. We’ll help you find a Nepal that feels like it was made just for you.</p>
       </div>
 
       <form class="trip-search" id="trip-search">
         <label class="search-field destination-field">
           <span class="field-icon">⌖</span>
-          <span><small>I'm dreaming of</small><input id="destination-input" type="text" placeholder="A place or experience" autocomplete="off" /></span>
+          <span><small data-i18n="dreamingOf">I'm dreaming of</small><input id="destination-input" type="text" data-i18n-placeholder="destinationPlaceholder" placeholder="A place or experience" autocomplete="off" /></span>
         </label>
         <label class="search-field">
           <span class="field-icon">◌</span>
-          <span><small>My travel mood</small><select id="mood-select"><option value="all">Any kind of adventure</option><option value="mountains">Mountain air</option><option value="culture">Culture & calm</option><option value="wild">Wild escapes</option></select></span>
+          <span><small data-i18n="travelMood">My travel mood</small><select id="mood-select"><option value="all" data-i18n="moodAll">Any kind of adventure</option><option value="mountains" data-i18n="moodMountains">Mountain air</option><option value="culture" data-i18n="moodCulture">Culture & calm</option><option value="wild" data-i18n="moodWild">Wild escapes</option></select></span>
         </label>
-        <button class="search-button" type="submit">Find my trip <span>→</span></button>
+        <button class="search-button" type="submit"><span data-i18n="findMyTrip">Find my trip</span> <span>→</span></button>
       </form>
       <p class="search-result" id="search-result" aria-live="polite"></p>
 
@@ -73,41 +81,41 @@
           <img src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=85" alt="Hiker looking over a Himalayan valley" />
           <div class="card-overlay"></div>
           <div class="card-content">
-            <div class="card-topline"><span class="card-tag">Iconic trek</span><button class="save-button" type="button" aria-label="Save Everest Base Camp">♡</button></div>
+            <div class="card-topline"><span class="card-tag" data-i18n="iconicTrek">Iconic trek</span><button class="save-button" type="button" aria-label="Save Everest Base Camp" data-i18n-aria="saveEverest">♡</button></div>
             <h3>Everest<br />Base Camp</h3>
-            <div class="card-meta"><span>⌁ 14 days</span><span>↗ Challenging</span></div>
+            <div class="card-meta"><span data-i18n="everestDays">⌁ 14 days</span><span data-i18n="challenging">↗ Challenging</span></div>
           </div>
         </article>
         <article class="destination-card" data-name="pokhara lakeside" data-mood="culture">
           <img src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85" alt="Pokhara lake with mountain peaks" />
           <div class="card-overlay"></div>
           <div class="card-content">
-            <div class="card-topline"><span class="card-tag">Slow travel</span><button class="save-button" type="button" aria-label="Save Pokhara">♡</button></div>
+            <div class="card-topline"><span class="card-tag" data-i18n="slowTravel">Slow travel</span><button class="save-button" type="button" aria-label="Save Pokhara" data-i18n-aria="savePokhara">♡</button></div>
             <h3>Pokhara<br />Lakeside</h3>
-            <div class="card-meta"><span>⌁ 5 days</span><span>↗ Easy</span></div>
+            <div class="card-meta"><span data-i18n="pokharaDays">⌁ 5 days</span><span data-i18n="easy">↗ Easy</span></div>
           </div>
         </article>
         <article class="destination-card" data-name="chitwan wild" data-mood="wild">
           <img src="https://images.unsplash.com/photo-1535338454770-8be927b5a00b?auto=format&fit=crop&w=900&q=85" alt="Elephant walking through a green Chitwan landscape" />
           <div class="card-overlay"></div>
           <div class="card-content">
-            <div class="card-topline"><span class="card-tag">Into the wild</span><button class="save-button" type="button" aria-label="Save Chitwan">♡</button></div>
+            <div class="card-topline"><span class="card-tag" data-i18n="intoTheWild">Into the wild</span><button class="save-button" type="button" aria-label="Save Chitwan" data-i18n-aria="saveChitwan">♡</button></div>
             <h3>Chitwan<br />Wild</h3>
-            <div class="card-meta"><span>⌁ 4 days</span><span>↗ Gentle</span></div>
+            <div class="card-meta"><span data-i18n="chitwanDays">⌁ 4 days</span><span data-i18n="gentle">↗ Gentle</span></div>
           </div>
         </article>
       </div>
-      <div class="empty-state" id="empty-state" hidden>No journeys found yet. Try “mountain”, “Pokhara”, or choose another mood.</div>
+      <div class="empty-state" id="empty-state" hidden data-i18n="emptyState">No journeys found yet. Try “mountain”, “Pokhara”, or choose another mood.</div>
     </section>
 
     <section class="trust-strip" id="how-it-works">
-      <div><strong>01</strong><span>Tell us what<br />you love</span></div>
-      <div><strong>02</strong><span>Meet your<br />perfect route</span></div>
-      <div><strong>03</strong><span>Make it<br />unforgettable</span></div>
-      <p>Made with local knowledge<br /><span>and a little bit of magic.</span></p>
+      <div><strong>01</strong><span data-i18n-html="stepOne">Tell us what<br />you love</span></div>
+      <div><strong>02</strong><span data-i18n-html="stepTwo">Meet your<br />perfect route</span></div>
+      <div><strong>03</strong><span data-i18n-html="stepThree">Make it<br />unforgettable</span></div>
+      <p data-i18n-html="trustMessage">Made with local knowledge<br /><span>and a little bit of magic.</span></p>
     </section>
   </main>
-  <footer id="stories"><span>© 2025 Himalaya</span><span>Travel deeper. Feel more.</span></footer>
+  <footer id="stories"><span>© 2025 Himalaya</span><span data-i18n="footerTagline">Travel deeper. Feel more.</span></footer>
   <script src="app.js"></script>
 </body>
 </html>
