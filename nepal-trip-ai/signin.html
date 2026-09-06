@@ -52,9 +52,24 @@
     const signInForm = document.querySelector('#signin-form');
     const authStatus = document.querySelector('#auth-status');
 
-    signInForm.addEventListener('submit', (event) => {
+    signInForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      authStatus.textContent = 'Sign-in will connect here when authentication is added.';
+      authStatus.textContent = 'Signing you in...';
+      const formData = new FormData(signInForm);
+
+      try {
+        const response = await fetch('/api/signin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.get('email'), password: formData.get('password') })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to sign in.');
+        authStatus.textContent = result.message;
+        window.location.href = 'index.html';
+      } catch (error) {
+        authStatus.textContent = error.message;
+      }
     });
   </script>
 </body>

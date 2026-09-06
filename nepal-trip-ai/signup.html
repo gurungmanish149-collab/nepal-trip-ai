@@ -63,7 +63,7 @@
     const confirmPassword = document.querySelector('#confirm-password');
     const signupStatus = document.querySelector('#signup-status');
 
-    signUpForm.addEventListener('submit', (event) => {
+    signUpForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (password.value !== confirmPassword.value) {
         confirmPassword.setCustomValidity('Passwords do not match.');
@@ -71,7 +71,27 @@
         return;
       }
       confirmPassword.setCustomValidity('');
-      signupStatus.textContent = 'Your account form is ready to connect to authentication.';
+      signupStatus.textContent = 'Creating your account...';
+      const formData = new FormData(signUpForm);
+
+      try {
+        const response = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName: formData.get('fullName'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            travelInterest: formData.get('travelInterest')
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to create your account.');
+        signupStatus.textContent = result.message;
+        window.location.href = 'index.html';
+      } catch (error) {
+        signupStatus.textContent = error.message;
+      }
     });
 
     confirmPassword.addEventListener('input', () => {
