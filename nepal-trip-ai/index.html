@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Himalaya is your intelligent guide to unforgettable trips in Nepal." />
+  <title>Himalaya | Find your Nepal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Himalaya home">
+      <span class="brand-mark">H</span>
+      <span>himalaya<span class="brand-dot">.</span></span>
+    </a>
+    <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+      <a class="active" href="#explore">Explore</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#stories">Stories</a>
+    </nav>
+    <div class="header-actions">
+      <button class="language-button" type="button" aria-label="Select language">EN <span>⌄</span></button>
+      <button class="sign-in" type="button">Sign in</button>
+      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-content">
+        <p class="eyebrow"><span class="eyebrow-line"></span> Your intelligent Nepal guide</p>
+        <h1 id="hero-title">Find the Nepal<br /><em>that calls you.</em></h1>
+        <p class="hero-copy">From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.</p>
+        <div class="hero-buttons">
+          <a class="primary-button" href="#explore">Start exploring <span>↗</span></a>
+          <button class="play-button" type="button" aria-label="Watch the Nepal story"><span class="play-icon">▶</span> See the story</button>
+        </div>
+      </div>
+      <div class="hero-note">
+        <span class="hero-note-icon">✦</span>
+        <span>Built for curious<br />travellers</span>
+      </div>
+      <div class="scroll-hint"><span>Scroll to explore</span><span class="scroll-line"></span></div>
+    </section>
+
+    <section class="explore-section" id="explore" aria-labelledby="explore-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span> Curated for you</p>
+          <h2 id="explore-title">Where will you<br /><em>go next?</em></h2>
+        </div>
+        <p class="section-intro">Tell us what moves you. We’ll help you find a Nepal that feels like it was made just for you.</p>
+      </div>
+
+      <form class="trip-search" id="trip-search">
+        <label class="search-field destination-field">
+          <span class="field-icon">⌖</span>
+          <span><small>I'm dreaming of</small><input id="destination-input" type="text" placeholder="A place or experience" autocomplete="off" /></span>
+        </label>
+        <label class="search-field">
+          <span class="field-icon">◌</span>
+          <span><small>My travel mood</small><select id="mood-select"><option value="all">Any kind of adventure</option><option value="mountains">Mountain air</option><option value="culture">Culture & calm</option><option value="wild">Wild escapes</option></select></span>
+        </label>
+        <button class="search-button" type="submit">Find my trip <span>→</span></button>
+      </form>
+      <p class="search-result" id="search-result" aria-live="polite"></p>
+
+      <div class="destination-grid" id="destination-grid">
+        <article class="destination-card featured-card" data-name="everest base camp" data-mood="mountains">
+          <img src="https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=1200&q=85" alt="Hiker looking over a Himalayan valley" />
+          <div class="card-overlay"></div>
+          <div class="card-content">
+            <div class="card-topline"><span class="card-tag">Iconic trek</span><button class="save-button" type="button" aria-label="Save Everest Base Camp">♡</button></div>
+            <h3>Everest<br />Base Camp</h3>
+            <div class="card-meta"><span>⌁ 14 days</span><span>↗ Challenging</span></div>
+          </div>
+        </article>
+        <article class="destination-card" data-name="pokhara lakeside" data-mood="culture">
+          <img src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85" alt="Pokhara lake with mountain peaks" />
+          <div class="card-overlay"></div>
+          <div class="card-content">
+            <div class="card-topline"><span class="card-tag">Slow travel</span><button class="save-button" type="button" aria-label="Save Pokhara">♡</button></div>
+            <h3>Pokhara<br />Lakeside</h3>
+            <div class="card-meta"><span>⌁ 5 days</span><span>↗ Easy</span></div>
+          </div>
+        </article>
+        <article class="destination-card" data-name="chitwan wild" data-mood="wild">
+          <img src="https://images.unsplash.com/photo-1535338454770-8be927b5a00b?auto=format&fit=crop&w=900&q=85" alt="Elephant walking through a green Chitwan landscape" />
+          <div class="card-overlay"></div>
+          <div class="card-content">
+            <div class="card-topline"><span class="card-tag">Into the wild</span><button class="save-button" type="button" aria-label="Save Chitwan">♡</button></div>
+            <h3>Chitwan<br />Wild</h3>
+            <div class="card-meta"><span>⌁ 4 days</span><span>↗ Gentle</span></div>
+          </div>
+        </article>
+      </div>
+      <div class="empty-state" id="empty-state" hidden>No journeys found yet. Try “mountain”, “Pokhara”, or choose another mood.</div>
+    </section>
+
+    <section class="trust-strip" id="how-it-works">
+      <div><strong>01</strong><span>Tell us what<br />you love</span></div>
+      <div><strong>02</strong><span>Meet your<br />perfect route</span></div>
+      <div><strong>03</strong><span>Make it<br />unforgettable</span></div>
+      <p>Made with local knowledge<br /><span>and a little bit of magic.</span></p>
+    </section>
+  </main>
+  <footer id="stories"><span>© 2025 Himalaya</span><span>Travel deeper. Feel more.</span></footer>
+  <script src="app.js"></script>
+</body>
+</html>
