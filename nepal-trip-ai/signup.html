@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Create your Himalaya travel planner account." />
+  <title>Create account | Himalaya</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-layout">
+    <section class="auth-visual auth-visual-signup" aria-label="Himalayan travel inspiration">
+      <a class="auth-brand brand" href="index.html" aria-label="Return to Himalaya home">
+        <span class="brand-mark">H</span>
+        <span>himalaya<span class="brand-dot">.</span></span>
+      </a>
+      <div class="auth-visual-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> Start somewhere beautiful</p>
+        <h1>Your next<br /><em>story begins.</em></h1>
+        <p>Create a home for the places you want to see, the routes you want to take, and the moments you will remember.</p>
+      </div>
+      <span class="auth-location">Your Nepal · Your way</span>
+    </section>
+
+    <section class="auth-panel" aria-labelledby="signup-title">
+      <a class="auth-back" href="index.html">← <span>Back to explore</span></a>
+      <div class="auth-form-wrap signup-form-wrap">
+        <p class="auth-kicker">Join Himalaya</p>
+        <h2 id="signup-title">Create your<br /><em>travel home.</em></h2>
+        <p class="auth-intro">One account for your saved places, plans, and future adventures.</p>
+        <form class="auth-form" id="signup-form">
+          <label for="full-name">Your name</label>
+          <input id="full-name" name="fullName" type="text" autocomplete="name" placeholder="What should we call you?" required />
+          <label for="signup-email">Email address</label>
+          <input id="signup-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <label for="signup-password">Create a password</label>
+          <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required />
+          <label for="confirm-password">Confirm password</label>
+          <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Repeat your password" required />
+          <label for="travel-interest">What calls you most?</label>
+          <select id="travel-interest" name="travelInterest" required>
+            <option value="" disabled selected>Choose a travel style</option>
+            <option value="mountains">Mountain air &amp; trekking</option>
+            <option value="culture">Culture, towns &amp; heritage</option>
+            <option value="wildlife">Wildlife &amp; quiet nature</option>
+            <option value="slow">Slow days &amp; local life</option>
+          </select>
+          <label class="remember-option"><input type="checkbox" name="terms" required /> <span>I agree to the terms and privacy policy</span></label>
+          <button class="auth-submit" type="submit">Create account <span>→</span></button>
+          <p class="auth-status" id="signup-status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="signin.html">Sign in</a></p>
+      </div>
+      <p class="auth-footer">© 2025 Himalaya · Travel deeper. Feel more.</p>
+    </section>
+  </main>
+  <script>
+    const signUpForm = document.querySelector('#signup-form');
+    const password = document.querySelector('#signup-password');
+    const confirmPassword = document.querySelector('#confirm-password');
+    const signupStatus = document.querySelector('#signup-status');
+
+    signUpForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (password.value !== confirmPassword.value) {
+        confirmPassword.setCustomValidity('Passwords do not match.');
+        confirmPassword.reportValidity();
+        return;
+      }
+      confirmPassword.setCustomValidity('');
+      signupStatus.textContent = 'Your account form is ready to connect to authentication.';
+    });
+
+    confirmPassword.addEventListener('input', () => {
+      confirmPassword.setCustomValidity(password.value === confirmPassword.value ? '' : 'Passwords do not match.');
+    });
+  </script>
+</body>
+</html>
