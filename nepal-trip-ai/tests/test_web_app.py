@@ -161,3 +161,33 @@ def test_chinese_and_korean_language_support():
 
     assert response_ko.status_code == 200
     assert b"\xec\x97\x85\xec\x97\x85" not in response_ko.data
+
+
+def test_logged_in_user_can_access_dashboard_page():
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session["user_id"] = 1
+        session["user_name"] = "Test User"
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert b"Test User" in response.data
+    assert b"Find my trip" in response.data
+
+
+def test_direct_app_signup_api_returns_json():
+    client = app.test_client()
+    response = client.post(
+        "/api/signup",
+        json={
+            "fullName": "JSON User",
+            "email": "jsonuser@example.com",
+            "password": "password123",
+            "travelInterest": "mountains",
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.is_json
+    assert "Account created successfully." in response.get_json()["message"]
