@@ -219,6 +219,12 @@ DASHBOARD_HTML = """
     .section-heading { max-width: 1300px; margin: 0 auto 36px; }
     .section-intro { margin-right: 0; }
     .trip-search { max-width: 1300px; margin: 0 auto 17px; border-color: #d9e0da; box-shadow: 0 9px 20px rgba(16,45,50,.04); }
+    .trip-planner-form { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+    .trip-planner-form .search-field { min-height: 86px; }
+    .trip-planner-form .search-field input, .trip-planner-form .search-field select {
+      width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 12px; border: 1px solid #d8ddd9; background: #fff;
+    }
+    .trip-planner-form .search-button { min-height: 56px; }
     .search-result { max-width: 1300px; margin: 0 auto 13px; }
     .destination-grid { max-width: 1300px; margin: 0 auto; grid-template-columns: 1.35fr 1fr 1fr; }
     .destination-card { height: 270px; }
@@ -294,16 +300,37 @@ DASHBOARD_HTML = """
         <p class="section-intro" data-i18n="sectionIntro">Routes matched to your time, energy, and the kind of stories you want to bring home.</p>
       </div>
 
-      <form class="trip-search" id="dashboard-search">
+      <form class="trip-search trip-planner-form" id="dashboard-search">
+        <label class="search-field destination-field">
+          <span class="field-icon">↗</span>
+          <span><small id="from-label">From</small>
+            <select id="from-input">
+              <option value="">Select country</option>
+              <option value="Japan">Japan</option>
+              <option value="Korea">Korea</option>
+              <option value="Australia">Australia</option>
+              <option value="America">America</option>
+              <option value="China">China</option>
+            </select>
+          </span>
+        </label>
         <label class="search-field destination-field">
           <span class="field-icon">⌖</span>
-          <span><small data-i18n="dreamingOf">I'm dreaming of</small><input id="destination-input" type="text" data-i18n-placeholder="destinationPlaceholder" placeholder="A place or experience" autocomplete="off" /></span>
+          <span><small id="to-label">To</small><select id="to-input"><option value="">Select place</option></select></span>
         </label>
         <label class="search-field">
-          <span class="field-icon">◌</span>
-          <span><small data-i18n="travelMood">My travel mood</small><select id="mood-select"><option value="all" data-i18n="moodAll">Any kind of adventure</option><option value="mountains" data-i18n="moodMountains">Mountain air</option><option value="culture" data-i18n="moodCulture">Culture &amp; calm</option><option value="wild" data-i18n="moodWild">Wild escapes</option></select></span>
+          <span class="field-icon">◔</span>
+          <span><small id="trip-days-label">Days</small><input id="trip-days" type="number" min="3" max="30" value="3" /></span>
         </label>
-        <button class="search-button" type="submit"><span data-i18n="findMyTrip">Find my trip</span> <span>→</span></button>
+        <label class="search-field">
+          <span class="field-icon">🗓</span>
+          <span><small id="departure-label">Departure</small><input id="departure-date" type="date" min="" /></span>
+        </label>
+        <label class="search-field">
+          <span class="field-icon">↩</span>
+          <span><small id="return-label">Return</small><input id="return-date" type="date" min="" /></span>
+        </label>
+        <button class="search-button" type="submit"><span id="find-trips-button-label">Find trips</span> <span>→</span></button>
       </form>
       <p class="search-result" id="search-result" aria-live="polite"></p>
 
@@ -323,10 +350,10 @@ DASHBOARD_HTML = """
   <script>
     const destinations = {{ destinations|tojson|safe }};
     const translations = {
-      en: { label: 'EN', heroEyebrow: 'Your trip dashboard', heroTitle: 'Welcome back,<br /><em>{{ user_name }}</em>', heroCopy: 'From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.', startExploring: 'Plan a new trip', seeStory: 'Saved trips', scrollToExplore: '3 saved trips', curatedForYou: 'AI recommendations', exploreTitle: 'Explore Nepal<br /><em>your way.</em>', sectionIntro: 'Routes matched to your time, energy, and the kind of stories you want to bring home.', dreamingOf: "I'm dreaming of", destinationPlaceholder: 'A place or experience', travelMood: 'My travel mood', moodAll: 'Any kind of adventure', moodMountains: 'Mountain air', moodCulture: 'Culture & calm', moodWild: 'Wild escapes', findMyTrip: 'Find my trip', heroNote: 'Kathmandu<br /><strong>18°C · Clear</strong>', stepOne: 'Pick a place<br />or feeling', stepTwo: 'Shape your<br />perfect route', stepThree: 'Keep it<br />all together', trustMessage: 'Your trip, in one place<br /><span>ready when you are.</span>', footerTagline: 'Travel deeper. Feel more.', saveThis: 'Save this trip', removeSaved: 'Remove from saved trips', emptyState: 'No journeys found yet. Try “mountain”, “Pokhara”, or choose another mood.' },
-      ja: { label: 'JA', heroEyebrow: 'あなたの旅ダッシュボード', heroTitle: 'お帰りなさい、<br /><em>{{ user_name }}</em>', heroCopy: '静かな山村から野生のジャングルまで、あなたらしい旅を形にしましょう。', startExploring: '新しい旅を計画', seeStory: '保存した旅', scrollToExplore: '保存した旅 3件', curatedForYou: 'AIおすすめ', exploreTitle: 'ネパールを探す<br /><em>あなたらしく。</em>', sectionIntro: '時間、体力、持ち帰りたい物語に合わせたルートをご提案します。', dreamingOf: '夢見ている場所', destinationPlaceholder: '場所や体験を入力', travelMood: '旅の気分', moodAll: 'すべての冒険', moodMountains: '山の空気', moodCulture: '文化と癒やし', moodWild: '野生の旅', findMyTrip: '旅を見つける', heroNote: 'カトマンズ<br /><strong>18°C · 晴れ</strong>', stepOne: '場所や気分を<br />選ぶ', stepTwo: 'ぴったりのルートを<br />つくる', stepThree: '旅をひとつに<br />まとめる', trustMessage: '旅をひとつの場所に<br /><span>いつでも準備万端。</span>', footerTagline: '深く旅して、もっと感じる。', saveThis: 'この旅を保存', removeSaved: '保存済みから削除', emptyState: '旅が見つかりません。「山」「ポカラ」または別の気分を試してください。' },
-      zh: { label: 'ZH', heroEyebrow: '你的旅行仪表盘', heroTitle: '欢迎回来，<br /><em>{{ user_name }}</em>', heroCopy: '从安静的山村到荒野丛林，按你想要的方式规划旅行。', startExploring: '规划新旅程', seeStory: '已保存旅程', scrollToExplore: '已保存 3 段旅程', curatedForYou: 'AI 为你推荐', exploreTitle: '探索尼泊尔<br /><em>找到你的方式。</em>', sectionIntro: '根据你的时间、体力和想带回家的故事，为你匹配路线。', dreamingOf: '我向往的地方', destinationPlaceholder: '地点或体验', travelMood: '我的旅行心情', moodAll: '任何冒险', moodMountains: '山间清风', moodCulture: '文化与宁静', moodWild: '野外探索', findMyTrip: '寻找我的旅程', heroNote: '加德满都<br /><strong>18°C · 晴</strong>', stepOne: '选择地点<br />或心情', stepTwo: '规划你的<br />完美路线', stepThree: '把旅程<br />放在一起', trustMessage: '让旅程集中在<br /><span>一个随时可用的地方。</span>', footerTagline: '深入旅行，感受更多。', saveThis: '保存这段旅程', removeSaved: '从已保存旅程中移除', emptyState: '暂时没有找到旅程。试试“山脉”“博卡拉”，或选择另一种心情。' },
-      ko: { label: 'KO', heroEyebrow: '나의 여행 대시보드', heroTitle: '다시 오셨네요,<br /><em>{{ user_name }}</em>', heroCopy: '조용한 산마을에서 야생 정글까지, 당신이 원하는 방식으로 여행을 설계해보세요.', startExploring: '새 여행 계획하기', seeStory: '저장한 여행', scrollToExplore: '저장한 여행 3개', curatedForYou: 'AI 추천', exploreTitle: '네팔 탐색하기<br /><em>나만의 방식으로.</em>', sectionIntro: '시간과 체력, 집으로 가져오고 싶은 이야기에 맞는 루트를 추천해드려요.', dreamingOf: '꿈꾸는 여행지', destinationPlaceholder: '장소 또는 경험', travelMood: '나의 여행 기분', moodAll: '어떤 모험이든', moodMountains: '산의 공기', moodCulture: '문화와 휴식', moodWild: '야생 속으로', findMyTrip: '내 여행 찾기', heroNote: '카트만두<br /><strong>18°C · 맑음</strong>', stepOne: '장소나 기분을<br />선택하세요', stepTwo: '나만의 완벽한<br />루트를 만드세요', stepThree: '여행을 한곳에<br />모아보세요', trustMessage: '여행을 한곳에 모아<br /><span>언제든 준비하세요.</span>', footerTagline: '더 깊이 여행하고, 더 많이 느껴보세요.', saveThis: '이 여행 저장', removeSaved: '저장한 여행에서 삭제', emptyState: '아직 여행을 찾지 못했어요. “산”, “포카라” 또는 다른 기분을 선택해 보세요.' }
+      en: { label: 'EN', heroEyebrow: 'Your trip dashboard', heroTitle: 'Welcome back,<br /><em>{{ user_name }}</em>', heroCopy: 'From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.', startExploring: 'Plan a new trip', seeStory: 'Saved trips', scrollToExplore: '3 saved trips', curatedForYou: 'AI recommendations', exploreTitle: 'Explore Nepal<br /><em>your way.</em>', sectionIntro: 'Routes matched to your time, energy, and the kind of stories you want to bring home.', dreamingOf: "I'm dreaming of", destinationPlaceholder: 'A place or experience', travelMood: 'My travel mood', moodAll: 'Any kind of adventure', moodMountains: 'Mountain air', moodCulture: 'Culture & calm', moodWild: 'Wild escapes', findMyTrip: 'Find my trip', heroNote: 'Kathmandu<br /><strong>18°C · Clear</strong>', stepOne: 'Pick a place<br />or feeling', stepTwo: 'Shape your<br />perfect route', stepThree: 'Keep it<br />all together', trustMessage: 'Your trip, in one place<br /><span>ready when you are.</span>', footerTagline: 'Travel deeper. Feel more.', saveThis: 'Save this trip', removeSaved: 'Remove from saved trips', emptyState: 'No journeys found yet. Try “mountain”, “Pokhara”, or choose another mood.', fromLabel: 'From', toLabel: 'To', tripDaysLabel: 'Days', departureLabel: 'Departure', returnLabel: 'Return', selectCountry: 'Select country', selectPlace: 'Select place', findTrips: 'Find trips', anyCountry: 'Any country', noTrips: 'No trips found for', placesFound: 'places found from', depart: 'Depart', returnText: 'Return' },
+      ja: { label: 'JA', heroEyebrow: 'あなたの旅ダッシュボード', heroTitle: 'お帰りなさい、<br /><em>{{ user_name }}</em>', heroCopy: '静かな山村から野生のジャングルまで、あなたらしい旅を形にしましょう。', startExploring: '新しい旅を計画', seeStory: '保存した旅', scrollToExplore: '保存した旅 3件', curatedForYou: 'AIおすすめ', exploreTitle: 'ネパールを探す<br /><em>あなたらしく。</em>', sectionIntro: '時間、体力、持ち帰りたい物語に合わせたルートをご提案します。', dreamingOf: '夢見ている場所', destinationPlaceholder: '場所や体験を入力', travelMood: '旅の気分', moodAll: 'すべての冒険', moodMountains: '山の空気', moodCulture: '文化と癒やし', moodWild: '野生の旅', findMyTrip: '旅を見つける', heroNote: 'カトマンズ<br /><strong>18°C · 晴れ</strong>', stepOne: '場所や気分を<br />選ぶ', stepTwo: 'ぴったりのルートを<br />つくる', stepThree: '旅をひとつに<br />まとめる', trustMessage: '旅をひとつの場所に<br /><span>いつでも準備万端。</span>', footerTagline: '深く旅して、もっと感じる。', saveThis: 'この旅を保存', removeSaved: '保存済みから削除', emptyState: '旅が見つかりません。「山」「ポカラ」または別の気分を試してください。', fromLabel: '出発地', toLabel: '目的地', tripDaysLabel: '日数', departureLabel: '出発日', returnLabel: '帰国日', selectCountry: '国を選択', selectPlace: '場所を選択', findTrips: '旅を探す', anyCountry: 'どの国でも', noTrips: '該当の旅程が見つかりません', placesFound: '件の候補が見つかりました', depart: '出発', returnText: '帰着' },
+      zh: { label: 'ZH', heroEyebrow: '你的旅行仪表盘', heroTitle: '欢迎回来，<br /><em>{{ user_name }}</em>', heroCopy: '从安静的山村到荒野丛林，按你想要的方式规划旅行。', startExploring: '规划新旅程', seeStory: '已保存旅程', scrollToExplore: '已保存 3 段旅程', curatedForYou: 'AI 为你推荐', exploreTitle: '探索尼泊尔<br /><em>找到你的方式。</em>', sectionIntro: '根据你的时间、体力和想带回家的故事，为你匹配路线。', dreamingOf: '我向往的地方', destinationPlaceholder: '地点或体验', travelMood: '我的旅行心情', moodAll: '任何冒险', moodMountains: '山间清风', moodCulture: '文化与宁静', moodWild: '野外探索', findMyTrip: '寻找我的旅程', heroNote: '加德满都<br /><strong>18°C · 晴</strong>', stepOne: '选择地点<br />或心情', stepTwo: '规划你的<br />完美路线', stepThree: '把旅程<br />放在一起', trustMessage: '让旅程集中在<br /><span>一个随时可用的地方。</span>', footerTagline: '深入旅行，感受更多。', saveThis: '保存这段旅程', removeSaved: '从已保存旅程中移除', emptyState: '暂时没有找到旅程。试试“山脉”“博卡拉”，或选择另一种心情。', fromLabel: '出发地', toLabel: '目的地', tripDaysLabel: '天数', departureLabel: '出发日', returnLabel: '返程日', selectCountry: '选择国家', selectPlace: '选择地点', findTrips: '寻找旅行', anyCountry: '任何国家', noTrips: '未找到合适行程', placesFound: '个目的地已为您筛选', depart: '出发', returnText: '返回' },
+      ko: { label: 'KO', heroEyebrow: '나의 여행 대시보드', heroTitle: '다시 오셨네요,<br /><em>{{ user_name }}</em>', heroCopy: '조용한 산마을에서 야생 정글까지, 당신이 원하는 방식으로 여행을 설계해보세요.', startExploring: '새 여행 계획하기', seeStory: '저장한 여행', scrollToExplore: '저장한 여행 3개', curatedForYou: 'AI 추천', exploreTitle: '네팔 탐색하기<br /><em>나만의 방식으로.</em>', sectionIntro: '시간과 체력, 집으로 가져오고 싶은 이야기에 맞는 루트를 추천해드려요.', dreamingOf: '꿈꾸는 여행지', destinationPlaceholder: '장소 또는 경험', travelMood: '나의 여행 기분', moodAll: '어떤 모험이든', moodMountains: '산의 공기', moodCulture: '문화와 휴식', moodWild: '야생 속으로', findMyTrip: '내 여행 찾기', heroNote: '카트만두<br /><strong>18°C · 맑음</strong>', stepOne: '장소나 기분을<br />선택하세요', stepTwo: '나만의 완벽한<br />루트를 만드세요', stepThree: '여행을 한곳에<br />모아보세요', trustMessage: '여행을 한곳에 모아<br /><span>언제든 준비하세요.</span>', footerTagline: '더 깊이 여행하고, 더 많이 느껴보세요.', saveThis: '이 여행 저장', removeSaved: '저장한 여행에서 삭제', emptyState: '아직 여행을 찾지 못했어요. “산”, “포카라” 또는 다른 기분을 선택해 보세요.', fromLabel: '출발지', toLabel: '도착지', tripDaysLabel: '일수', departureLabel: '출발일', returnLabel: '복귀일', selectCountry: '국가 선택', selectPlace: '장소 선택', findTrips: '여행 찾기', anyCountry: '모든 국가', noTrips: '조건에 맞는 여행이 없습니다', placesFound: '개의 여행지를 찾았습니다', depart: '출발', returnText: '복귀' }
     };
 
     const languageButton = document.getElementById('language-button');
@@ -349,7 +376,48 @@ DASHBOARD_HTML = """
       document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
         if (value[node.dataset.i18nAria]) node.setAttribute('aria-label', value[node.dataset.i18nAria]);
       });
-      document.getElementById('destination-input').placeholder = value.destinationPlaceholder;
+
+      const fieldLabels = {
+        from: document.getElementById('from-label'),
+        to: document.getElementById('to-label'),
+        tripDays: document.getElementById('trip-days-label'),
+        departure: document.getElementById('departure-label'),
+        return: document.getElementById('return-label'),
+        findTrips: document.getElementById('find-trips-button-label')
+      };
+
+      if (fieldLabels.from) fieldLabels.from.textContent = value.fromLabel;
+      if (fieldLabels.to) fieldLabels.to.textContent = value.toLabel;
+      if (fieldLabels.tripDays) fieldLabels.tripDays.textContent = value.tripDaysLabel;
+      if (fieldLabels.departure) fieldLabels.departure.textContent = value.departureLabel;
+      if (fieldLabels.return) fieldLabels.return.textContent = value.returnLabel;
+      if (fieldLabels.findTrips) fieldLabels.findTrips.textContent = value.findTrips;
+
+      const fromInput = document.getElementById('from-input');
+      if (fromInput) {
+        const currentFromValue = fromInput.value;
+        fromInput.innerHTML = `
+          <option value="">${value.selectCountry}</option>
+          <option value="Japan">Japan</option>
+          <option value="Korea">Korea</option>
+          <option value="Australia">Australia</option>
+          <option value="America">America</option>
+          <option value="China">China</option>
+        `;
+        if (currentFromValue) fromInput.value = currentFromValue;
+      }
+
+      const toInput = document.getElementById('to-input');
+      if (toInput) {
+        const currentToValue = toInput.value;
+        const options = [
+          `<option value="">${value.selectPlace}</option>`,
+          ...[...new Set(destinations.map((destination) => destination.name))].sort().map((place) => `<option value="${place}">${place}</option>`)
+        ];
+        toInput.innerHTML = options.join('');
+        if (currentToValue) toInput.value = currentToValue;
+      }
+
       localStorage.setItem('himalaya-language', language);
     }
 
@@ -363,28 +431,92 @@ DASHBOARD_HTML = """
     });
 
     const destinationGrid = document.getElementById('destination-grid');
-    const destinationInput = document.getElementById('destination-input');
+    const fromInput = document.getElementById('from-input');
+    const toInput = document.getElementById('to-input');
+    const tripDaysInput = document.getElementById('trip-days');
+    const departureDateInput = document.getElementById('departure-date');
+    const returnDateInput = document.getElementById('return-date');
     const searchResult = document.getElementById('search-result');
-    const moodSelect = document.getElementById('mood-select');
+
+    function formatDateInput(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function syncDateConstraints() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayValue = formatDateInput(today);
+      departureDateInput.min = todayValue;
+      returnDateInput.min = todayValue;
+
+      if (departureDateInput.value && new Date(departureDateInput.value) < today) {
+        departureDateInput.value = '';
+      }
+      if (returnDateInput.value && new Date(returnDateInput.value) < today) {
+        returnDateInput.value = '';
+      }
+
+      if (departureDateInput.value) {
+        const departureDate = new Date(`${departureDateInput.value}T00:00:00`);
+        returnDateInput.min = formatDateInput(departureDate);
+        if (returnDateInput.value && new Date(`${returnDateInput.value}T00:00:00`) < departureDate) {
+          returnDateInput.value = departureDateInput.value;
+        }
+      }
+    }
+
+    function renderPlaceOptions() {
+      const currentToValue = toInput.value;
+      const options = [
+        `<option value="">${translations[currentLanguage].selectPlace}</option>`,
+        ...[...new Set(destinations.map((destination) => destination.name))].sort().map((place) => `<option value="${place}">${place}</option>`)
+      ];
+      toInput.innerHTML = options.join('');
+      if (currentToValue) toInput.value = currentToValue;
+    }
 
     function renderDestinations() {
-      const query = destinationInput.value.trim().toLowerCase();
-      const mood = moodSelect.value;
+      const fromCountry = fromInput.value;
+      const selectedPlace = toInput.value;
+      const tripDays = Number.parseInt(tripDaysInput.value, 10);
+      const departureDate = departureDateInput.value;
+      const returnDate = returnDateInput.value;
+
+      if (tripDays && tripDays < 3) {
+        tripDaysInput.value = '3';
+      }
+
+      const effectiveTripDays = Number.isNaN(tripDays) || tripDays < 3 ? 3 : tripDays;
+
       const matches = destinations.filter((destination) => {
         const haystack = [destination.name, destination.region, destination.description, ...(destination.interests || []), ...(destination.best_for || [])].join(' ').toLowerCase();
-        const moodMatch = mood === 'all' || (destination.interests || []).includes(mood) || (destination.region || '').toLowerCase().includes(mood);
-        return moodMatch && (!query || haystack.includes(query));
+        const fromMatch = !fromCountry || true;
+        const toMatch = !selectedPlace || destination.name === selectedPlace || destination.region === selectedPlace;
+        const tripMatch = effectiveTripDays >= 3;
+        const dateMatch = !departureDate || !returnDate || new Date(returnDate) >= new Date(departureDate);
+
+        return fromMatch && toMatch && tripMatch && dateMatch && haystack.length > 0;
       });
 
       if (!matches.length) {
         destinationGrid.innerHTML = '<div class="empty-state">' + translations[currentLanguage].emptyState + '</div>';
-        searchResult.textContent = '0 matches';
+        const where = selectedPlace || 'Nepal';
+        searchResult.textContent = `${translations[currentLanguage].noTrips} ${where} · ${effectiveTripDays} ${translations[currentLanguage].tripDaysLabel}`;
         return;
       }
 
-      searchResult.textContent = matches.length + ' destinations ready for you';
+      const fromLabel = fromCountry || translations[currentLanguage].anyCountry;
+      const toLabel = selectedPlace || 'Nepal';
+      const tripText = ` · ${effectiveTripDays} ${translations[currentLanguage].tripDaysLabel}`;
+      const departureText = departureDate ? ` · ${translations[currentLanguage].depart} ${departureDate}` : '';
+      const returnText = returnDate ? ` · ${translations[currentLanguage].returnText} ${returnDate}` : '';
+      searchResult.textContent = `${matches.length} ${translations[currentLanguage].placesFound} ${fromLabel} ${translations[currentLanguage].toLabel.toLowerCase()} ${toLabel}${tripText}${departureText}${returnText}`;
+
       destinationGrid.innerHTML = matches.map((destination) => `
-        <article class="destination-card ${destination.name === 'Kathmandu' ? 'featured-card' : ''}" data-name="${destination.name.toLowerCase()}" data-mood="${(destination.interests || []).join(' ')}">
+        <article class="destination-card ${destination.name === 'Kathmandu' ? 'featured-card' : ''}" data-name="${destination.name.toLowerCase()}">
           <img src="${destination.image_url || destination.image || ''}" alt="${destination.name}" />
           <div class="card-overlay"></div>
           <div class="card-content">
@@ -401,15 +533,26 @@ DASHBOARD_HTML = """
       renderDestinations();
     });
 
-    destinationInput.addEventListener('input', renderDestinations);
-    moodSelect.addEventListener('change', renderDestinations);
+    fromInput.addEventListener('change', renderDestinations);
+    toInput.addEventListener('change', renderDestinations);
+    tripDaysInput.addEventListener('input', renderDestinations);
+    departureDateInput.addEventListener('change', () => {
+      syncDateConstraints();
+      renderDestinations();
+    });
+    returnDateInput.addEventListener('change', () => {
+      syncDateConstraints();
+      renderDestinations();
+    });
 
     document.getElementById('dashboard-signout').addEventListener('click', async () => {
       await fetch('/api/signout', { method: 'POST' });
       window.location.href = '/signin.html';
     });
 
+    renderPlaceOptions();
     updateTexts(currentLanguage);
+    syncDateConstraints();
     renderDestinations();
   </script>
 </body>

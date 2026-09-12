@@ -34,6 +34,8 @@
         <form class="auth-form" id="signup-form">
           <label for="full-name">Your name</label>
           <input id="full-name" name="fullName" type="text" autocomplete="name" placeholder="What should we call you?" required />
+          <label for="username">Choose a username</label>
+          <input id="username" name="username" type="text" autocomplete="username" minlength="3" maxlength="20" placeholder="Unique username" required />
           <label for="signup-email">Email address</label>
           <input id="signup-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
           <label for="signup-password">Create a password</label>
@@ -80,6 +82,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             fullName: formData.get('fullName'),
+            username: formData.get('username'),
             email: formData.get('email'),
             password: formData.get('password'),
             travelInterest: formData.get('travelInterest')

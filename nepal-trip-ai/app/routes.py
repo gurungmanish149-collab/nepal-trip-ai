@@ -3,12 +3,13 @@ import re
 from flask import Blueprint, current_app, jsonify, redirect, render_template_string, request, session, send_from_directory
 
 from .data import DESTINATIONS
-from .models import authenticate_user, create_user, find_user_by_email
+from .models import authenticate_user, create_user, find_user_by_email, find_user_by_username
 
 
 pages = Blueprint("pages", __name__)
 auth_api = Blueprint("auth_api", __name__)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+USERNAME_PATTERN = re.compile(r"^[a-z0-9._-]{3,30}$")
 ALLOWED_INTERESTS = {"mountains", "culture", "wildlife", "slow"}
 
 
@@ -68,6 +69,12 @@ DASHBOARD_HTML = """
     .section-heading { max-width: 1300px; margin: 0 auto 36px; }
     .section-intro { margin-right: 0; }
     .trip-search { max-width: 1300px; margin: 0 auto 17px; border-color: #d9e0da; box-shadow: 0 9px 20px rgba(16,45,50,.04); }
+    .trip-planner-form { display: grid; grid-template-columns: repeat(5, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+    .trip-planner-form .search-field { min-height: 86px; }
+    .trip-planner-form .search-field input, .trip-planner-form .search-field select {
+      width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 12px; border: 1px solid #d8ddd9; background: #fff;
+    }
+    .trip-planner-form .search-button { min-height: 56px; }
     .search-result { max-width: 1300px; margin: 0 auto 13px; }
     .destination-grid { max-width: 1300px; margin: 0 auto; grid-template-columns: 1.35fr 1fr 1fr; }
     .destination-card { height: 270px; }
@@ -143,16 +150,37 @@ DASHBOARD_HTML = """
         <p class="section-intro" data-i18n="sectionIntro">Routes matched to your time, energy, and the kind of stories you want to bring home.</p>
       </div>
 
-      <form class="trip-search" id="dashboard-search">
+      <form class="trip-search trip-planner-form" id="dashboard-search">
+        <label class="search-field destination-field">
+          <span class="field-icon">↗</span>
+          <span><small id="from-label">From</small>
+            <select id="from-input">
+              <option value="">Select country</option>
+              <option value="Japan">Japan</option>
+              <option value="Korea">Korea</option>
+              <option value="Australia">Australia</option>
+              <option value="America">America</option>
+              <option value="China">China</option>
+            </select>
+          </span>
+        </label>
         <label class="search-field destination-field">
           <span class="field-icon">⌖</span>
-          <span><small data-i18n="dreamingOf">I'm dreaming of</small><input id="destination-input" type="text" data-i18n-placeholder="destinationPlaceholder" placeholder="A place or experience" autocomplete="off" /></span>
+          <span><small id="to-label">To</small><select id="to-input"><option value="">Select place</option></select></span>
         </label>
         <label class="search-field">
-          <span class="field-icon">◌</span>
-          <span><small data-i18n="travelMood">My travel mood</small><select id="mood-select"><option value="all" data-i18n="moodAll">Any kind of adventure</option><option value="mountains" data-i18n="moodMountains">Mountain air</option><option value="culture" data-i18n="moodCulture">Culture &amp; calm</option><option value="wild" data-i18n="moodWild">Wild escapes</option></select></span>
+          <span class="field-icon">◔</span>
+          <span><small id="trip-days-label">Days</small><input id="trip-days" type="number" min="3" max="30" value="3" /></span>
         </label>
-        <button class="search-button" type="submit"><span data-i18n="findMyTrip">Find my trip</span> <span>→</span></button>
+        <label class="search-field">
+          <span class="field-icon">🗓</span>
+          <span><small id="departure-label">Departure</small><input id="departure-date" type="date" min="" /></span>
+        </label>
+        <label class="search-field">
+          <span class="field-icon">↩</span>
+          <span><small id="return-label">Return</small><input id="return-date" type="date" min="" /></span>
+        </label>
+        <button class="search-button" type="submit"><span id="find-trips-button-label">Find trips</span> <span>→</span></button>
       </form>
       <p class="search-result" id="search-result" aria-live="polite"></p>
 
@@ -215,28 +243,90 @@ DASHBOARD_HTML = """
     });
 
     const destinationGrid = document.getElementById('destination-grid');
-    const destinationInput = document.getElementById('destination-input');
+    const fromInput = document.getElementById('from-input');
+    const toInput = document.getElementById('to-input');
+    const tripDaysInput = document.getElementById('trip-days');
+    const departureDateInput = document.getElementById('departure-date');
+    const returnDateInput = document.getElementById('return-date');
     const searchResult = document.getElementById('search-result');
-    const moodSelect = document.getElementById('mood-select');
+
+    function formatDateInput(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function syncDateConstraints() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayValue = formatDateInput(today);
+      departureDateInput.min = todayValue;
+      returnDateInput.min = todayValue;
+
+      if (departureDateInput.value && new Date(departureDateInput.value) < today) {
+        departureDateInput.value = '';
+      }
+      if (returnDateInput.value && new Date(returnDateInput.value) < today) {
+        returnDateInput.value = '';
+      }
+
+      if (departureDateInput.value) {
+        const departureDate = new Date(`${departureDateInput.value}T00:00:00`);
+        returnDateInput.min = formatDateInput(departureDate);
+        if (returnDateInput.value && new Date(`${returnDateInput.value}T00:00:00`) < departureDate) {
+          returnDateInput.value = departureDateInput.value;
+        }
+      }
+    }
+
+    const placeOptions = [...new Set(destinations.map((destination) => destination.name))].sort();
+    placeOptions.forEach((place) => {
+      const option = document.createElement('option');
+      option.value = place;
+      option.textContent = place;
+      toInput.appendChild(option);
+    });
 
     function renderDestinations() {
-      const query = destinationInput.value.trim().toLowerCase();
-      const mood = moodSelect.value;
+      const fromCountry = fromInput.value;
+      const selectedPlace = toInput.value;
+      const tripDays = Number.parseInt(tripDaysInput.value, 10);
+      const departureDate = departureDateInput.value;
+      const returnDate = returnDateInput.value;
+
+      if (tripDays && tripDays < 3) {
+        tripDaysInput.value = '3';
+      }
+
+      const effectiveTripDays = Number.isNaN(tripDays) || tripDays < 3 ? 3 : tripDays;
+
       const matches = destinations.filter((destination) => {
         const haystack = [destination.name, destination.region, destination.description, ...(destination.interests || []), ...(destination.best_for || [])].join(' ').toLowerCase();
-        const moodMatch = mood === 'all' || (destination.interests || []).includes(mood) || (destination.region || '').toLowerCase().includes(mood);
-        return moodMatch && (!query || haystack.includes(query));
+        const fromMatch = !fromCountry || fromCountry === 'Select country' || true;
+        const toMatch = !selectedPlace || destination.name === selectedPlace || destination.region === selectedPlace;
+        const tripMatch = effectiveTripDays >= 3;
+        const dateMatch = !departureDate || !returnDate || new Date(returnDate) >= new Date(departureDate);
+
+        return fromMatch && toMatch && tripMatch && dateMatch && haystack.length > 0;
       });
 
       if (!matches.length) {
         destinationGrid.innerHTML = '<div class="empty-state">' + translations[currentLanguage].emptyState + '</div>';
-        searchResult.textContent = '0 matches';
+        const where = selectedPlace || 'Nepal';
+        searchResult.textContent = `No trips found for ${where} · ${effectiveTripDays} days`;
         return;
       }
 
-      searchResult.textContent = matches.length + ' destinations ready for you';
+      const fromLabel = fromCountry || 'Any country';
+      const toLabel = selectedPlace || 'Nepal';
+      const tripText = ` · ${effectiveTripDays} days`;
+      const departureText = departureDate ? ` · Depart ${departureDate}` : '';
+      const returnText = returnDate ? ` · Return ${returnDate}` : '';
+      searchResult.textContent = `${matches.length} places found from ${fromLabel} to ${toLabel}${tripText}${departureText}${returnText}`;
+
       destinationGrid.innerHTML = matches.map((destination) => `
-        <article class="destination-card ${destination.name === 'Kathmandu' ? 'featured-card' : ''}" data-name="${destination.name.toLowerCase()}" data-mood="${(destination.interests || []).join(' ')}">
+        <article class="destination-card ${destination.name === 'Kathmandu' ? 'featured-card' : ''}" data-name="${destination.name.toLowerCase()}">
           <img src="${destination.image_url || destination.image || ''}" alt="${destination.name}" />
           <div class="card-overlay"></div>
           <div class="card-content">
@@ -253,8 +343,17 @@ DASHBOARD_HTML = """
       renderDestinations();
     });
 
-    destinationInput.addEventListener('input', renderDestinations);
-    moodSelect.addEventListener('change', renderDestinations);
+    fromInput.addEventListener('change', renderDestinations);
+    toInput.addEventListener('change', renderDestinations);
+    tripDaysInput.addEventListener('input', renderDestinations);
+    departureDateInput.addEventListener('change', () => {
+      syncDateConstraints();
+      renderDestinations();
+    });
+    returnDateInput.addEventListener('change', () => {
+      syncDateConstraints();
+      renderDestinations();
+    });
 
     document.getElementById('dashboard-signout').addEventListener('click', async () => {
       await fetch('/api/signout', { method: 'POST' });
@@ -262,6 +361,7 @@ DASHBOARD_HTML = """
     });
 
     updateTexts(currentLanguage);
+    syncDateConstraints();
     renderDestinations();
   </script>
 </body>
@@ -287,19 +387,22 @@ def public_file(filename):
 
 def validate_signup(payload):
     full_name = payload.get("fullName", "").strip()
+    username = payload.get("username", "").strip().lower()
     email = payload.get("email", "").strip().lower()
     password = payload.get("password", "")
     travel_interest = payload.get("travelInterest", "")
 
     if not full_name:
         return None, "Please enter your name."
+    if not username or not USERNAME_PATTERN.match(username):
+        return None, "Please choose a username with 3-30 letters, numbers, dots, underscores, or dashes."
     if not EMAIL_PATTERN.match(email):
         return None, "Please enter a valid email address."
     if len(password) < 8:
         return None, "Your password must be at least 8 characters."
     if travel_interest not in ALLOWED_INTERESTS:
         return None, "Please choose a travel style."
-    return (full_name, email, password, travel_interest), None
+    return (full_name, username, email, password, travel_interest), None
 
 
 @auth_api.post("/signup")
@@ -309,15 +412,17 @@ def signup():
     if error:
         return jsonify({"error": error}), 400
 
-    full_name, email, password, travel_interest = values
+    full_name, username, email, password, travel_interest = values
     if find_user_by_email(email) is not None:
         return jsonify({"error": "An account with that email already exists."}), 409
+    if find_user_by_username(username) is not None:
+        return jsonify({"error": "This username is already taken."}), 409
 
-    user = create_user(full_name, email, password, travel_interest)
+    user = create_user(full_name, username, email, password, travel_interest)
     session.clear()
     session["user_id"] = user.id
     session["user_name"] = user.full_name
-    return jsonify({"message": "Account created successfully.", "user": {"name": user.full_name, "email": user.email}}), 201
+    return jsonify({"message": "Account created successfully.", "user": {"name": user.full_name, "username": user.username, "email": user.email}}), 201
 
 
 @auth_api.post("/signin")

@@ -3,6 +3,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import uuid
 
 from app.web_app import app
 
@@ -174,15 +175,19 @@ def test_logged_in_user_can_access_dashboard_page():
     assert response.status_code == 200
     assert b"Test User" in response.data
     assert b"Find my trip" in response.data
+    assert b'id="departure-date" type="date" min=""' in response.data
+    assert b'id="return-date" type="date" min=""' in response.data
 
 
 def test_direct_app_signup_api_returns_json():
     client = app.test_client()
+    suffix = uuid.uuid4().hex[:8]
     response = client.post(
         "/api/signup",
         json={
             "fullName": "JSON User",
-            "email": "jsonuser@example.com",
+            "username": f"jsonuser_{suffix}",
+            "email": f"jsonuser_{suffix}@example.com",
             "password": "password123",
             "travelInterest": "mountains",
         },
@@ -191,3 +196,34 @@ def test_direct_app_signup_api_returns_json():
     assert response.status_code == 201
     assert response.is_json
     assert "Account created successfully." in response.get_json()["message"]
+
+
+def test_duplicate_username_is_rejected():
+    client = app.test_client()
+    suffix = uuid.uuid4().hex[:8]
+
+    first = client.post(
+        "/api/signup",
+        json={
+            "fullName": "Same Name User",
+            "username": f"samenameuser_{suffix}",
+            "email": f"same-name-1-{suffix}@example.com",
+            "password": "password123",
+            "travelInterest": "culture",
+        },
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/api/signup",
+        json={
+            "fullName": "Another Same Name User",
+            "username": f"samenameuser_{suffix}",
+            "email": f"same-name-2-{suffix}@example.com",
+            "password": "password123",
+            "travelInterest": "wildlife",
+        },
+    )
+
+    assert second.status_code == 409
+    assert "username" in second.get_json()["error"].lower()
