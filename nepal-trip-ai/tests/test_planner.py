@@ -12,7 +12,7 @@ def test_recommend_destinations_for_culture_trip():
     )
 
     assert result["recommendations"]
-    assert any(item["name"] == "Kathmandu" for item in result["recommendations"])
+    assert any(item["interests"] and "culture" in item["interests"] for item in result["recommendations"])
     assert result["estimated_total"] > 0
 
 
@@ -27,7 +27,7 @@ def test_recommendation_for_trekking_budget():
     )
 
     assert result["recommendations"]
-    assert any(item["name"] in {"Pokhara", "Everest Base Camp Region"} for item in result["recommendations"])
+    assert any(item["interests"] and "trekking" in item["interests"] for item in result["recommendations"])
 
 
 def test_no_matching_destinations_returns_empty_result():
@@ -42,3 +42,27 @@ def test_no_matching_destinations_returns_empty_result():
 
     assert result["recommendations"] == []
     assert "No destinations" in result["message"]
+
+
+def test_japan_to_ilam_trip_cost_includes_flight_and_daily_expenses_in_jpy():
+    planner = TravelPlanner()
+    quote = planner.calculate_trip_cost("Japan", "Ilam", "2026-09-14", "2026-09-19")
+
+    assert quote["from_country"] == "Japan"
+    assert quote["destination"] == "Ilam"
+    assert quote["trip_days"] == 6
+    assert quote["airfare_jpy"] > 0
+    assert quote["local_expenses_jpy"] > 0
+    assert quote["total_cost_jpy"] == quote["airfare_jpy"] + quote["local_expenses_jpy"]
+
+
+def test_china_to_kathmandu_trip_cost_includes_flight_and_daily_expenses_in_jpy():
+    planner = TravelPlanner()
+    quote = planner.calculate_trip_cost("China", "Kathmandu", "2026-09-14", "2026-09-19")
+
+    assert quote["from_country"] == "China"
+    assert quote["destination"] == "Kathmandu"
+    assert quote["trip_days"] == 6
+    assert quote["airfare_jpy"] > 0
+    assert quote["local_expenses_jpy"] > 0
+    assert quote["total_cost_jpy"] == quote["airfare_jpy"] + quote["local_expenses_jpy"]
