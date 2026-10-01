@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.data import DESTINATIONS
 
@@ -28,22 +28,25 @@ class TravelPlanner:
     def generate_itinerary(
         self,
         days: int,
-        budget_usd: int,
+        budget_usd: Optional[int],
         region: str,
         interests: List[str],
         season: str,
+        destination_name: str = "",
     ) -> Dict[str, Any]:
         recommendations = []
 
         for destination in self.destinations:
             estimated_total = destination["daily_cost"] * days
-            if estimated_total > budget_usd:
+            if budget_usd is not None and estimated_total > budget_usd:
                 continue
             if not self.matches_region(destination, region):
                 continue
             if not self.matches_interest(destination, interests):
                 continue
             if not self.matches_season(destination, season):
+                continue
+            if destination_name and destination["name"].casefold() != destination_name.casefold():
                 continue
 
             recommendations.append(
@@ -55,6 +58,8 @@ class TravelPlanner:
                     "interests": destination["interests"],
                     "best_for": destination["best_for"],
                     "description": destination["description"],
+                    "lat": destination["lat"],
+                    "lng": destination["lng"],
                     "image_url": destination.get("image_url", ""),
                     "image": destination.get("image_url", ""),
                 }

@@ -4,6 +4,7 @@ from flask import Flask
 
 from .database import init_app, init_database
 from .routes import auth_api, pages
+from .web_app import planner_pages
 
 
 def create_app(test_config=None):
@@ -21,6 +22,7 @@ def create_app(test_config=None):
     init_app(app)
     app.register_blueprint(pages)
     app.register_blueprint(auth_api, url_prefix="/api")
+    app.register_blueprint(planner_pages, url_prefix="/dashboard")
 
     with app.app_context():
         init_database()

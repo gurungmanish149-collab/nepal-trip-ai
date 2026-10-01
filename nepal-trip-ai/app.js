@@ -9,6 +9,7 @@ const mainNav = document.querySelector('#main-nav');
 const languageButton = document.querySelector('#language-button');
 const languageMenu = document.querySelector('#language-menu');
 const currentLanguageLabel = document.querySelector('#current-language');
+const authLink = document.querySelector('.sign-in');
 
 const translations = {
   en: {
@@ -18,6 +19,7 @@ const translations = {
     howItWorks: 'My trips',
     stories: 'Profile',
     signIn: 'Sign in',
+    signOut: 'Sign out',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
     heroEyebrow: 'Your trip dashboard',
@@ -68,6 +70,7 @@ const translations = {
     howItWorks: 'マイトリップ',
     stories: 'プロフィール',
     signIn: 'サインイン',
+    signOut: 'サインアウト',
     openMenu: 'メニューを開く',
     closeMenu: 'メニューを閉じる',
     heroEyebrow: 'あなたの旅ダッシュボード',
@@ -118,6 +121,7 @@ const translations = {
     howItWorks: '我的旅程',
     stories: '个人资料',
     signIn: '登录',
+    signOut: '退出登录',
     openMenu: '打开菜单',
     closeMenu: '关闭菜单',
     heroEyebrow: '你的旅行仪表盘',
@@ -168,6 +172,7 @@ const translations = {
     howItWorks: '내 여행',
     stories: '프로필',
     signIn: '로그인',
+    signOut: '로그아웃',
     openMenu: '메뉴 열기',
     closeMenu: '메뉴 닫기',
     heroEyebrow: '나의 여행 대시보드',
@@ -214,6 +219,38 @@ const translations = {
 };
 
 let currentLanguage = localStorage.getItem('himalaya-language') || 'en';
+let currentUser = null;
+
+function updateAuthLink() {
+  const languageCopy = translations[currentLanguage];
+  authLink.textContent = currentUser ? `${currentUser.name} · ${languageCopy.signOut}` : languageCopy.signIn;
+  authLink.href = currentUser ? '#top' : 'signin.html';
+  authLink.setAttribute('aria-label', currentUser ? `${languageCopy.signOut} ${currentUser.name}` : languageCopy.signIn);
+}
+
+async function loadCurrentUser() {
+  try {
+    const response = await fetch('/api/me');
+    if (!response.ok) return;
+    const result = await response.json();
+    currentUser = result.user;
+    updateAuthLink();
+  } catch (error) {
+    console.error('Unable to check the current user.', error);
+  }
+}
+
+authLink.addEventListener('click', async (event) => {
+  if (!currentUser) return;
+  event.preventDefault();
+  try {
+    const response = await fetch('/api/signout', { method: 'POST' });
+    if (!response.ok) throw new Error('Unable to sign out.');
+    window.location.reload();
+  } catch (error) {
+    console.error(error);
+  }
+});
 
 function applyLanguage(language) {
   currentLanguage = translations[language] ? language : 'en';
@@ -240,6 +277,7 @@ function applyLanguage(language) {
   document.title = `Himalaya | ${currentLanguage === 'en' ? 'Find your Nepal' : languageCopy.explore}`;
   localStorage.setItem('himalaya-language', currentLanguage);
   updateSaveLabels();
+  updateAuthLink();
   if (resultMessage.textContent) {
     const visibleCount = cards.filter((card) => !card.hidden).length;
     resultMessage.textContent = visibleCount ? languageCopy.journeyFound(visibleCount) : '';
@@ -321,3 +359,4 @@ document.addEventListener('click', (event) => {
 });
 
 applyLanguage(currentLanguage);
+loadCurrentUser();
