@@ -8,6 +8,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     full_name TEXT NOT NULL,
+    username TEXT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     travel_interest TEXT NOT NULL,
@@ -39,4 +40,10 @@ def init_app(app):
 def init_database():
     database = get_db()
     database.executescript(SCHEMA)
+
+    columns = [row[1] for row in database.execute("PRAGMA table_info(users)").fetchall()]
+    if "username" not in columns:
+        database.execute("ALTER TABLE users ADD COLUMN username TEXT")
+
+    database.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)")
     database.commit()
