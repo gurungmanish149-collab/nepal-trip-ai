@@ -1,9 +1,21 @@
 import re
+import smtplib
+from email.message import EmailMessage
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template_string, request, session, send_from_directory
 
 from .data import DESTINATIONS
-from .models import authenticate_user, create_user, find_user_by_email, find_user_by_username
+from .models import (
+    authenticate_user,
+    create_password_reset_token,
+    create_user,
+    find_user_by_email,
+    find_user_by_username,
+    list_saved_destinations,
+    remove_saved_destination,
+    reset_password_with_token,
+    save_destination,
+)
 
 
 pages = Blueprint("pages", __name__)
@@ -11,6 +23,42 @@ auth_api = Blueprint("auth_api", __name__)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 USERNAME_PATTERN = re.compile(r"^[a-z0-9._-]{3,30}$")
 ALLOWED_INTERESTS = {"mountains", "culture", "wildlife", "slow"}
+DESTINATIONS_BY_NAME = {destination["name"].lower(): destination["name"] for destination in DESTINATIONS}
+
+
+def _reset_url(token):
+    return f"{request.url_root.rstrip('/')}/reset-password.html?token={token}"
+
+
+def _send_password_reset_email(recipient, reset_url):
+    """Send via configured SMTP. Returns False instead of claiming delivery on failure."""
+    config = current_app.config
+    host = config.get("SMTP_HOST")
+    sender = config.get("SMTP_FROM")
+    if not host or not sender:
+        return False
+
+    message = EmailMessage()
+    message["Subject"] = "Reset your Himalaya password"
+    message["From"] = sender
+    message["To"] = recipient
+    message.set_content(
+        "We received a request to reset your Himalaya password. "
+        f"Use this secure link within one hour: {reset_url}\n\n"
+        "If you did not request this, you can safely ignore this email."
+    )
+
+    try:
+        with smtplib.SMTP(host, int(config.get("SMTP_PORT", 587)), timeout=10) as smtp:
+            if config.get("SMTP_USE_TLS", True):
+                smtp.starttls()
+            if config.get("SMTP_USERNAME"):
+                smtp.login(config["SMTP_USERNAME"], config.get("SMTP_PASSWORD", ""))
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException, ValueError):
+        current_app.logger.exception("Password-reset email delivery failed")
+        return False
+    return True
 
 
 def serve_page(filename):
@@ -700,6 +748,85 @@ def signin():
     session["user_id"] = user.id
     session["user_name"] = user.full_name
     return jsonify({"message": f"Welcome back, {user.full_name}.", "user": {"name": user.full_name, "email": user.email}})
+
+
+@auth_api.post("/password-reset/request")
+def request_password_reset():
+    payload = request.get_json(silent=True) or request.form
+    email = payload.get("email", "").strip().lower()
+    if not EMAIL_PATTERN.match(email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
+
+    user = find_user_by_email(email)
+    demo_mode = current_app.config.get("RESET_PASSWORD_DEMO_MODE", False)
+    email_configured = bool(current_app.config.get("SMTP_HOST") and current_app.config.get("SMTP_FROM"))
+
+    if not demo_mode and not email_configured:
+        return jsonify({
+            "error": "Password recovery email is not configured for this environment. Please contact support."
+        }), 503
+
+    if user is None:
+        return jsonify({
+            "message": "If this email belongs to an account, password-reset instructions will be available shortly."
+        })
+
+    token = create_password_reset_token(user["id"])
+    reset_url = _reset_url(token)
+
+    if demo_mode:
+        return jsonify({
+            "message": "Demo mode is active. Use the secure reset link below; it expires in one hour.",
+            "demo_reset_url": reset_url,
+        })
+
+    if not _send_password_reset_email(user["email"], reset_url):
+        return jsonify({
+            "error": "We could not deliver a reset email. Please try again later or contact support."
+        }), 503
+
+    return jsonify({"message": "If this email belongs to an account, password-reset instructions have been sent."})
+
+
+@auth_api.post("/password-reset/confirm")
+def confirm_password_reset():
+    payload = request.get_json(silent=True) or request.form
+    token = payload.get("token", "")
+    password = payload.get("password", "")
+    password_confirmation = payload.get("passwordConfirmation", "")
+
+    if len(password) < 8:
+        return jsonify({"error": "Your password must be at least 8 characters."}), 400
+    if password != password_confirmation:
+        return jsonify({"error": "The passwords do not match."}), 400
+    if not reset_password_with_token(token, password):
+        return jsonify({"error": "This reset link is invalid or has expired. Request a new one."}), 400
+
+    return jsonify({"message": "Your password has been reset. You can now sign in."})
+
+
+@auth_api.route("/wishlist", methods=["GET", "POST", "DELETE"])
+def wishlist():
+    user_id = session.get("user_id")
+    if user_id is None:
+        return jsonify({"error": "Please sign in to manage saved destinations."}), 401
+
+    if request.method == "GET":
+        return jsonify({"items": list_saved_destinations(user_id)})
+
+    payload = request.get_json(silent=True) or request.form
+    requested_name = payload.get("destination", "").strip()
+    destination_name = DESTINATIONS_BY_NAME.get(requested_name.lower())
+    if destination_name is None:
+        return jsonify({"error": "Choose a destination from the current Nepal collection."}), 400
+
+    if request.method == "POST":
+        save_destination(user_id, destination_name)
+        return jsonify({"message": f"{destination_name} was saved to your wishlist.", "destination": destination_name}), 201
+
+    removed = remove_saved_destination(user_id, destination_name)
+    message = f"{destination_name} was removed from your wishlist." if removed else "This destination was not in your wishlist."
+    return jsonify({"message": message, "destination": destination_name})
 
 
 @auth_api.post("/signout")

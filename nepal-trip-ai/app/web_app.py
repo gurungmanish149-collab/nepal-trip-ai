@@ -468,6 +468,10 @@ DASHBOARD_HTML = """
     body.modal-open { overflow: hidden; }
     .detail-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(17, 24, 21, 0.62); z-index: 1000; padding: 24px; overflow-y: auto; }
     .detail-modal.open { display: flex; }
+    .image-lightbox { position: fixed; inset: 0; z-index: 1300; display: none; align-items: center; justify-content: center; padding: 28px; background: rgba(4,18,19,.92); }
+    .image-lightbox.open { display: flex; }
+    .image-lightbox img { max-width: min(1200px, 94vw); max-height: 86vh; border-radius: 14px; box-shadow: 0 32px 80px rgba(0,0,0,.45); object-fit: contain; }
+    .lightbox-close { position: absolute; top: 22px; right: 24px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.38); border-radius: 50%; color: white; background: rgba(255,255,255,.1); font-size: 1.7rem; cursor: pointer; }
     .detail-modal-card { width: min(760px, 100%); max-height: min(82vh, 780px); overflow-y: auto; background: #fbfcf9; border-radius: 24px; border: 1px solid rgba(16,45,50,.12); box-shadow: 0 30px 70px rgba(16,45,50,.25); padding: 0; position: relative; }
     .detail-close { position: absolute; top: 16px; right: 16px; width: 38px; height: 38px; border: 0; border-radius: 50%; background: #edf1eb; color: var(--ink); font-size: 1.6rem; cursor: pointer; z-index: 2; }
     .detail-image { width: 100%; height: 320px; object-fit: cover; object-position: center; display: block; border-radius: 24px 24px 0 0; filter: saturate(1.12) contrast(1.08); }
@@ -481,6 +485,30 @@ DASHBOARD_HTML = """
     .detail-metrics strong { color: var(--ink); font-size: 1.15rem; }
     .detail-price { margin-top: 8px; padding: 16px 18px; border-radius: 16px; background: linear-gradient(135deg, #f6efe5, #fffaf1); border: 1px solid #f0debb; font-size: 1.2rem; font-weight: 700; color: #2d3d36; }
     .detail-price .pill { display: inline-block; margin-right: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(183,129,46,.16); color: #7a5819; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    .detail-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .detail-save { min-height: 46px; padding: 0 18px; border: 1px solid #cb9a4e; background: #fff8ed; color: #6f4a14; border-radius: 12px; font-size: .85rem; font-weight: 700; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+    .detail-save:hover { background: #f5e5c7; transform: translateY(-1px); }
+    .detail-save.saved { background: #ebc681; color: #243733; }
+    .trip-search.is-loading { opacity: .78; }
+    .trip-search.is-loading .search-button { cursor: wait; }
+    .planner-card { min-height: 320px; cursor: pointer; border-radius: 16px; box-shadow: 0 15px 30px rgba(16,45,50,.11); }
+    .planner-card .card-content { transition: background .25s ease; }
+    .planner-card:hover .card-content { background: linear-gradient(0deg, rgba(7, 28, 30, .35), transparent 56%); }
+    .planner-card-button { align-self: flex-start; margin-top: 15px; padding: 9px 11px; color: #fff; background: rgba(6,29,30,.6); border: 1px solid rgba(255,255,255,.34); border-radius: 999px; font-size: .72rem; font-weight: 700; cursor: pointer; }
+    .planner-empty { grid-column: 1 / -1; padding: 34px; border: 1px dashed #c9d5cc; border-radius: 16px; color: #657572; text-align: center; }
+    .saved-section { max-width: 1300px; margin: 0 auto; padding: 0 8vw 65px; background: #fbfcf9; }
+    .saved-section-inner { padding: 30px; border: 1px solid #dfe7df; border-radius: 22px; background: #f2f6f1; }
+    .saved-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+    .saved-heading h2 { font-size: clamp(2rem, 3vw, 3rem); }
+    .saved-heading p { max-width: 420px; margin: 0; color: #657572; font-size: .9rem; line-height: 1.55; }
+    .saved-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+    .saved-card { overflow: hidden; border: 1px solid #dce5dd; border-radius: 15px; background: #fff; box-shadow: 0 8px 18px rgba(16,45,50,.06); }
+    .saved-card img { width: 100%; height: 132px; object-fit: cover; }
+    .saved-card-body { padding: 13px 14px 15px; }
+    .saved-card h3 { margin: 0 0 5px; font-family: 'Playfair Display', Georgia, serif; font-size: 1.38rem; font-weight: 600; }
+    .saved-card p { margin: 0 0 12px; color: #64746f; font-size: .78rem; }
+    .saved-remove { padding: 0; color: #8a5b20; background: transparent; font-size: .77rem; font-weight: 700; cursor: pointer; }
+    .saved-empty { margin: 0; color: #657572; font-size: .9rem; }
     .card-content h3 { font-size: clamp(1.8rem, 2.8vw, 2.7rem); }
     .card-description { margin: -5px 0 0; max-width: 190px; color: rgba(255,255,255,.82); font-size: 11px; line-height: 1.35; }
     .trust-strip { grid-template-columns: repeat(3, 1fr) 1.3fr; padding: 25px 8vw; background: #eef1ed; border-top: 1px solid #dce2dc; border-bottom: 1px solid #dce2dc; }
@@ -509,7 +537,7 @@ DASHBOARD_HTML = """
     </a>
     <nav class="main-nav" id="main-nav" aria-label="Main navigation">
       <a class="active" href="#explore">Explore</a>
-      <a href="#how-it-works">My trips</a>
+      <a href="#saved-destinations">My trips</a>
       <a href="#stories">Profile</a>
     </nav>
     <div class="header-actions">
@@ -534,7 +562,7 @@ DASHBOARD_HTML = """
         <p class="hero-copy" data-i18n="heroCopy">From quiet mountain villages to wild jungle trails, discover a journey shaped around the way you want to travel.</p>
         <div class="hero-buttons">
           <a class="primary-button" href="#explore"><span data-i18n="startExploring">Plan a new trip</span> <span>+</span></a>
-          <button class="play-button" type="button" aria-label="View saved trips" data-i18n-aria="watchStory"><span class="play-icon">⌑</span> <span data-i18n="seeStory">Saved trips</span></button>
+          <button class="play-button" id="view-saved-trips" type="button" aria-label="View saved trips" data-i18n-aria="watchStory"><span class="play-icon">⌑</span> <span data-i18n="seeStory">Saved trips</span></button>
         </div>
       </div>
       <div class="hero-note">
@@ -572,7 +600,7 @@ DASHBOARD_HTML = """
           <span><small id="to-label">To</small><select id="to-input"><option value="">Select place</option></select></span>
         </label>
         <label class="search-field">
-          <span class="field-icon">🗓</span>
+          <span class="field-icon">□</span>
           <span><small id="departure-label">Departure</small><input id="departure-date" type="date" min="" /></span>
         </label>
         <label class="search-field">
@@ -589,8 +617,25 @@ DASHBOARD_HTML = """
           <div id="detail-content"></div>
         </div>
       </div>
+      <div class="image-lightbox" id="image-lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Full-screen destination image">
+        <button class="lightbox-close" id="lightbox-close" type="button" aria-label="Close full-screen image">×</button>
+        <img id="lightbox-image" src="" alt="" />
+      </div>
 
-      <div class="destination-grid" id="destination-grid"></div>
+      <div class="destination-grid" id="destination-grid" aria-live="polite" aria-busy="false"></div>
+    </section>
+
+    <section class="saved-section" id="saved-destinations" aria-labelledby="saved-destinations-title">
+      <div class="saved-section-inner">
+        <div class="saved-heading">
+          <div>
+            <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span> Your wishlist</p>
+            <h2 id="saved-destinations-title">Saved <em>journeys.</em></h2>
+          </div>
+          <p>Keep the Nepal destinations you want to revisit. Saving a destination never creates a booking or payment.</p>
+        </div>
+        <div class="saved-list" id="saved-list"><p class="saved-empty">Loading your saved destinations…</p></div>
+      </div>
     </section>
 
     <section class="trust-strip" id="how-it-works">
@@ -602,6 +647,7 @@ DASHBOARD_HTML = """
   </main>
 
   <footer id="stories"><span>© 2025 Himalaya</span><span data-i18n="footerTagline">Travel deeper. Feel more.</span></footer>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-label="Notifications"></div>
 
   <script>
     const destinations = {{ destinations|tojson|safe }};
@@ -695,11 +741,108 @@ DASHBOARD_HTML = """
     const detailModal = document.getElementById('destination-modal');
     const detailContent = document.getElementById('detail-content');
     const detailClose = document.getElementById('detail-close');
+    const imageLightbox = document.getElementById('image-lightbox');
+    const lightboxImage = document.getElementById('lightbox-image');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const savedList = document.getElementById('saved-list');
+    const toastRegion = document.getElementById('toast-region');
+    const dashboardSearch = document.getElementById('dashboard-search');
+    let savedDestinationNames = new Set();
+    let dashboardSearchTimer;
+
+    function showToast(message, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = `toast${isError ? ' toast--error' : ''}`;
+      toast.textContent = message;
+      toastRegion.append(toast);
+      window.setTimeout(() => toast.remove(), 3800);
+    }
+
+    function wishlistButtonLabel(destinationName) {
+      return savedDestinationNames.has(destinationName) ? 'Remove from wishlist' : 'Save to wishlist';
+    }
+
+    function destinationByName(destinationName) {
+      return destinations.find((destination) => destination.name === destinationName);
+    }
+
+    function renderSavedDestinations() {
+      if (!savedDestinationNames.size) {
+        savedList.innerHTML = '<p class="saved-empty">Your wishlist is ready for the places that inspire your next trip.</p>';
+        return;
+      }
+
+      savedList.innerHTML = [...savedDestinationNames].map((name) => {
+        const destination = destinationByName(name);
+        if (!destination) return '';
+        return `
+          <article class="saved-card">
+            <img src="${destination.image_url}" alt="${destination.name}" loading="lazy" />
+            <div class="saved-card-body">
+              <h3>${destination.name}</h3>
+              <p>${destination.region} · from ¥${formatCurrency(Math.round(destination.daily_cost * 150))} per day</p>
+              <button class="saved-remove" type="button" data-remove-saved="${destination.name}">Remove from wishlist</button>
+            </div>
+          </article>`;
+      }).join('');
+    }
+
+    async function loadWishlist() {
+      try {
+        const response = await fetch('/api/wishlist');
+        if (!response.ok) throw new Error('Unable to load saved destinations.');
+        const data = await response.json();
+        savedDestinationNames = new Set(data.items.map((item) => item.destination_name));
+        renderSavedDestinations();
+      } catch (error) {
+        savedList.innerHTML = '<p class="saved-empty">Your saved destinations will appear here once available.</p>';
+      }
+    }
+
+    async function toggleWishlist(destinationName, button) {
+      const isSaved = savedDestinationNames.has(destinationName);
+      if (button) button.disabled = true;
+      try {
+        const response = await fetch('/api/wishlist', {
+          method: isSaved ? 'DELETE' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destination: destinationName })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to update your wishlist.');
+        if (isSaved) savedDestinationNames.delete(destinationName);
+        else savedDestinationNames.add(destinationName);
+        renderSavedDestinations();
+        if (button) {
+          button.textContent = wishlistButtonLabel(destinationName);
+          button.classList.toggle('saved', !isSaved);
+        }
+        showToast(result.message);
+      } catch (error) {
+        showToast(error.message, true);
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
 
     function closeDestinationModal() {
       detailModal.classList.remove('open');
       detailModal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('modal-open');
+    }
+
+    function closeImageLightbox() {
+      imageLightbox.classList.remove('open');
+      imageLightbox.setAttribute('aria-hidden', 'true');
+      lightboxImage.src = '';
+    }
+
+    function openImageLightbox(source, alt) {
+      lightboxImage.src = source;
+      lightboxImage.alt = alt;
+      imageLightbox.classList.add('open');
+      imageLightbox.setAttribute('aria-hidden', 'false');
+      lightboxClose.focus();
     }
 
     function openDestinationPopup(destination, tripCost, fromCountry, departureDate, returnDate) {
@@ -714,7 +857,7 @@ DASHBOARD_HTML = """
       const formatValue = (value) => `¥${formatCurrency(value)}`;
 
       detailContent.innerHTML = `
-        <img class="detail-image" src="${destination.image_url || destination.image || ''}" alt="${destination.name}" />
+        <img class="detail-image" data-lightbox-image src="${destination.image_url || destination.image || ''}" alt="${destination.name}" tabindex="0" role="button" aria-label="View ${destination.name} image full screen" />
         <div class="detail-content-inner">
           <div class="detail-header">
             <span class="card-tag">${destination.region}</span>
@@ -750,8 +893,20 @@ DASHBOARD_HTML = """
               <strong>${formatValue(tripCost ? tripCost.localExpenses : 0)}</strong>
             </div>
           </div>
+          <div class="detail-actions">
+            <button class="detail-save${savedDestinationNames.has(destination.name) ? ' saved' : ''}" id="detail-save" type="button">${wishlistButtonLabel(destination.name)}</button>
+          </div>
         </div>
       `;
+
+      document.getElementById('detail-save').addEventListener('click', (event) => {
+        toggleWishlist(destination.name, event.currentTarget);
+      });
+      const detailImage = detailContent.querySelector('[data-lightbox-image]');
+      detailImage.addEventListener('click', () => openImageLightbox(detailImage.src, detailImage.alt));
+      detailImage.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') openImageLightbox(detailImage.src, detailImage.alt);
+      });
 
       detailModal.classList.add('open');
       detailModal.setAttribute('aria-hidden', 'false');
@@ -759,12 +914,19 @@ DASHBOARD_HTML = """
     }
 
     detailClose.addEventListener('click', closeDestinationModal);
+    lightboxClose.addEventListener('click', closeImageLightbox);
+    imageLightbox.addEventListener('click', (event) => {
+      if (event.target === imageLightbox) closeImageLightbox();
+    });
     detailModal.addEventListener('click', (event) => {
       if (event.target === detailModal) closeDestinationModal();
     });
     document.addEventListener('keydown', (event) => {
       if (event.key === 'Escape' && detailModal.classList.contains('open')) {
         closeDestinationModal();
+      }
+      if (event.key === 'Escape' && imageLightbox.classList.contains('open')) {
+        closeImageLightbox();
       }
     });
 
@@ -927,13 +1089,14 @@ DASHBOARD_HTML = """
         return fromMatch && toMatch && dateMatch && haystack.length > 0;
       });
 
-      destinationGrid.innerHTML = '';
-      destinationGrid.style.display = 'none';
-
       if (!matches.length) {
         closeDestinationModal();
         const where = selectedPlace || 'Nepal';
         searchResult.textContent = `${translations[currentLanguage].noTrips} ${where}`;
+        destinationGrid.style.display = 'grid';
+        destinationGrid.innerHTML = `<p class="planner-empty">No journey matches these details yet. Try another destination or date range.</p>`;
+        destinationGrid.setAttribute('aria-busy', 'false');
+        dashboardSearch.classList.remove('is-loading');
         return;
       }
 
@@ -957,23 +1120,68 @@ DASHBOARD_HTML = """
         searchResult.textContent = `${matches.length} ${lang.placesFound} ${fromLabel} ${lang.toLabel.toLowerCase()} ${toLabel}${departureText}${returnText}`;
       }
 
-      destinationGrid.innerHTML = '';
+      destinationGrid.style.display = 'grid';
+      destinationGrid.innerHTML = matches.slice(0, 9).map((destination) => `
+        <article class="destination-card planner-card">
+          <img src="${destination.image_url}" alt="${destination.name}" loading="lazy" />
+          <div class="card-overlay"></div>
+          <div class="card-content">
+            <div class="card-topline"><span class="card-tag">${destination.region}</span></div>
+            <div>
+              <h3>${destination.name}</h3>
+              <p class="card-description">${getLocalizedDestinationText(destination, currentLanguage)}</p>
+              <button class="planner-card-button" type="button" data-open-destination="${destination.name}">View travel estimate</button>
+            </div>
+          </div>
+        </article>`).join('');
+      destinationGrid.setAttribute('aria-busy', 'false');
+      dashboardSearch.classList.remove('is-loading');
     }
 
-    document.getElementById('dashboard-search').addEventListener('submit', (event) => {
+    function queueDestinationRender(options = {}) {
+      window.clearTimeout(dashboardSearchTimer);
+      destinationGrid.setAttribute('aria-busy', 'true');
+      dashboardSearch.classList.add('is-loading');
+      searchResult.textContent = 'Finding the right journeys for you…';
+      dashboardSearchTimer = window.setTimeout(() => renderDestinations(options), 260);
+    }
+
+    dashboardSearch.addEventListener('submit', (event) => {
       event.preventDefault();
-      renderDestinations({ openPopup: true });
+      queueDestinationRender({ openPopup: true });
     });
 
-    fromInput.addEventListener('change', () => renderDestinations({ openPopup: false }));
-    toInput.addEventListener('change', () => renderDestinations({ openPopup: false }));
+    fromInput.addEventListener('change', () => queueDestinationRender({ openPopup: false }));
+    toInput.addEventListener('change', () => queueDestinationRender({ openPopup: false }));
     departureDateInput.addEventListener('change', () => {
       syncDateConstraints();
-      renderDestinations();
+      queueDestinationRender();
     });
     returnDateInput.addEventListener('change', () => {
       syncDateConstraints();
-      renderDestinations();
+      queueDestinationRender();
+    });
+
+    destinationGrid.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-open-destination]');
+      if (!button) return;
+      const destination = destinationByName(button.dataset.openDestination);
+      const cost = getTripCostEstimate(
+        destination,
+        fromInput.value || 'Japan',
+        departureDateInput.value || '2026-09-14',
+        returnDateInput.value || '2026-09-19'
+      );
+      openDestinationPopup(destination, cost, fromInput.value || translations[currentLanguage].anyCountry, departureDateInput.value, returnDateInput.value);
+    });
+
+    savedList.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-remove-saved]');
+      if (button) toggleWishlist(button.dataset.removeSaved, button);
+    });
+
+    document.getElementById('view-saved-trips').addEventListener('click', () => {
+      document.getElementById('saved-destinations').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
     document.getElementById('dashboard-signout').addEventListener('click', async () => {
@@ -985,6 +1193,7 @@ DASHBOARD_HTML = """
     updateTexts(currentLanguage);
     syncDateConstraints();
     renderDestinations();
+    loadWishlist();
   </script>
 </body>
 </html>

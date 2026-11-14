@@ -366,4 +366,74 @@ footer { background: #fbfcf9; }
 	.destination-preview > img { height: 175px; }
 	.destination-preview-content { padding: 20px 16px; }
 	.destination-preview-facts { gap: 8px; }
+/* Product motion and interaction layer */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: .18s ease both fade-out; }
+::view-transition-new(root) { animation: .28s ease both fade-in; }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes hero-drift { from { background-position: 50% 58%; } to { background-position: 54% 54%; } }
+@keyframes soft-pulse { 50% { opacity: .6; } }
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+:focus-visible { outline: 3px solid rgba(236, 173, 69, .72); outline-offset: 3px; }
+button:active, .primary-button:active, .sign-in:active, .auth-submit:active { transform: translateY(1px) scale(.985); }
+button:disabled { cursor: not-allowed; opacity: .62; }
+
+/* The discovery homepage keeps its structure but gains a photographic, calmer hero. */
+.hero.app-dashboard {
+  min-height: 680px;
+  height: min(84vh, 820px);
+  color: white;
+  background: linear-gradient(90deg, rgba(6, 29, 30, .9), rgba(11, 41, 42, .56) 52%, rgba(11, 37, 39, .22)), url('app/images/pexels-oasissss911-37670639.jpg') center 58% / cover;
+  animation: hero-drift 18s ease-in-out infinite alternate;
+}
+.hero.app-dashboard::after { display: block; }
+.app-dashboard .hero-copy { color: rgba(255, 255, 255, .8); }
+.app-dashboard .hero-note { color: rgba(255, 255, 255, .88); background: rgba(8, 37, 39, .42); border-color: rgba(255, 255, 255, .22); backdrop-filter: blur(7px); }
+.app-dashboard .hero-note-icon { color: var(--saffron); background: transparent; border: 1px solid rgba(236, 173, 69, .7); }
+.app-dashboard .scroll-hint { color: rgba(255, 255, 255, .68); }
+.app-dashboard .scroll-line { background: rgba(255, 255, 255, .6); }
+.app-dashboard .play-button { color: white; }
+.app-dashboard .play-icon { border-color: rgba(255, 255, 255, .65); }
+
+.language-menu { display: grid; visibility: hidden; opacity: 0; transform: translateY(-6px) scale(.98); pointer-events: none; transition: opacity .18s ease, transform .18s ease, visibility .18s; }
+.language-menu.open { visibility: visible; opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.destination-card { border-radius: 3px; box-shadow: 0 10px 24px rgba(16, 45, 50, .08); transition: transform .32s cubic-bezier(.2,.8,.2,1), box-shadow .32s ease, opacity .24s ease; }
+.destination-card:hover { transform: translateY(-5px); box-shadow: 0 22px 38px rgba(16, 45, 50, .18); }
+.destination-card:hover .card-content { background: linear-gradient(0deg, rgba(7, 28, 30, .22), transparent 45%); }
+.card-content { transition: background .32s ease; }
+.save-button { display: inline-grid; place-items: center; transition: color .2s, background .2s, transform .2s, box-shadow .2s; }
+.save-button:hover { transform: scale(1.08); box-shadow: 0 5px 14px rgba(0, 0, 0, .22); }
+.save-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.save-button.saved svg { fill: currentColor; }
+.destination-grid[aria-busy="true"] { position: relative; min-height: 270px; }
+.destination-grid[aria-busy="true"] .destination-card:not([hidden]) { opacity: .32; pointer-events: none; }
+.destination-grid[aria-busy="true"]::after { position: absolute; inset: 0; content: ''; background: linear-gradient(100deg, transparent 10%, rgba(255,255,255,.55) 35%, transparent 60%); transform: translateX(-100%); animation: shimmer .9s ease-in-out infinite; pointer-events: none; }
+.search-button.is-loading span:last-child { display: inline-block; animation: soft-pulse .7s ease-in-out infinite; }
+
+.toast-region { position: fixed; z-index: 1200; right: max(20px, 4vw); bottom: 24px; display: grid; gap: 10px; width: min(360px, calc(100vw - 40px)); pointer-events: none; }
+.toast { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; color: #f8fbf8; background: #173f3f; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; box-shadow: 0 18px 38px rgba(5, 25, 25, .25); font-size: 13px; line-height: 1.45; animation: toast-in .28s ease both; }
+.toast--error { background: #6c302e; }
+.toast svg { flex: 0 0 auto; width: 17px; height: 17px; margin-top: 1px; stroke: var(--saffron); fill: none; stroke-width: 2; }
+.auth-demo-link { margin: 4px 0 0; font-size: 12px; }
+.auth-demo-link a { color: #8e5e22; font-weight: 700; text-decoration: underline; }
+.auth-visual-reset { background-image: linear-gradient(90deg, rgba(6, 29, 30, .84), rgba(11, 41, 42, .22)), url('app/images/ilam.jpg'); background-position: center; }
+.page-enter { animation: arrive .48s ease-out both; }
+
+.js-scroll .reveal { opacity: 0; transform: translateY(22px); transition: opacity .62s ease, transform .62s cubic-bezier(.2,.75,.25,1); transition-delay: var(--reveal-delay, 0ms); }
+.js-scroll .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 760px) {
+  .main-nav { display: flex; visibility: hidden; opacity: 0; transform: translateY(-9px) scale(.98); pointer-events: none; transform-origin: top right; transition: opacity .2s ease, transform .2s ease, visibility .2s; box-shadow: 0 16px 32px rgba(5, 28, 29, .22); }
+  .main-nav.open { display: flex; visibility: visible; opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .hero.app-dashboard { min-height: 620px; height: 78vh; padding-top: 120px; }
+  .toast-region { bottom: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .js-scroll .reveal { opacity: 1; transform: none; }
 }

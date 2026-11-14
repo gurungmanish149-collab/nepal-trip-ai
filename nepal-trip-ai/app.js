@@ -220,6 +220,16 @@ const translations = {
 
 let currentLanguage = localStorage.getItem('himalaya-language') || 'en';
 let currentUser = null;
+let savedDestinationNames = new Set();
+let signedIn = false;
+let searchTimer;
+
+const heartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></svg>';
+const toastRegion = document.createElement('div');
+toastRegion.className = 'toast-region';
+toastRegion.setAttribute('aria-live', 'polite');
+toastRegion.setAttribute('aria-label', 'Notifications');
+document.body.append(toastRegion);
 
 function updateAuthLink() {
   const languageCopy = translations[currentLanguage];
@@ -251,6 +261,24 @@ authLink.addEventListener('click', async (event) => {
     console.error(error);
   }
 });
+
+function showToast(message, variant = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast${variant === 'error' ? ' toast--error' : ''}`;
+  toast.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg><span></span>`;
+  toast.querySelector('span').textContent = message;
+  toastRegion.append(toast);
+  window.setTimeout(() => toast.remove(), 4200);
+}
+
+function setSavedVisual(button, isSaved) {
+  button.classList.toggle('saved', isSaved);
+  button.innerHTML = heartIcon;
+  const languageCopy = translations[currentLanguage];
+  const defaultLabel = button.dataset.i18nAria ? languageCopy[button.dataset.i18nAria] : languageCopy.saveTrip;
+  button.setAttribute('aria-label', isSaved ? languageCopy.removeSaved : defaultLabel || languageCopy.saveTrip);
+  button.setAttribute('aria-pressed', String(isSaved));
+}
 
 function applyLanguage(language) {
   currentLanguage = translations[language] ? language : 'en';
@@ -285,15 +313,57 @@ function applyLanguage(language) {
 }
 
 function updateSaveLabels() {
-  const languageCopy = translations[currentLanguage];
   document.querySelectorAll('.save-button').forEach((button) => {
-    const isSaved = button.classList.contains('saved');
-    button.setAttribute('aria-label', isSaved ? languageCopy.removeSaved : languageCopy[button.dataset.i18nAria]);
+    setSavedVisual(button, savedDestinationNames.has(button.closest('.destination-card').dataset.name));
   });
 }
 
-function filterTrips(event) {
-  event.preventDefault();
+async function loadWishlist() {
+  try {
+    const userResponse = await fetch('/api/me');
+    const userData = await userResponse.json();
+    signedIn = Boolean(userData.user);
+    if (!signedIn) return;
+
+    const response = await fetch('/api/wishlist');
+    if (!response.ok) return;
+    const data = await response.json();
+    savedDestinationNames = new Set(data.items.map((item) => item.destination_name.toLowerCase()));
+    updateSaveLabels();
+  } catch {
+    // The public discovery page remains usable if the account service is unavailable.
+  }
+}
+
+async function toggleSavedDestination(button) {
+  const destination = button.closest('.destination-card').dataset.name;
+  if (!signedIn) {
+    showToast('Sign in to save destinations to your wishlist.', 'error');
+    return;
+  }
+
+  const isSaved = savedDestinationNames.has(destination);
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/wishlist', {
+      method: isSaved ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ destination })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Unable to update your wishlist.');
+    if (isSaved) savedDestinationNames.delete(destination);
+    else savedDestinationNames.add(destination);
+    setSavedVisual(button, !isSaved);
+    showToast(result.message);
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function applyTripFilters() {
   const query = destinationInput.value.trim().toLowerCase();
   const mood = moodSelect.value;
   let visibleCount = 0;
@@ -308,21 +378,27 @@ function filterTrips(event) {
 
   emptyState.hidden = visibleCount > 0;
   resultMessage.textContent = visibleCount > 0 ? translations[currentLanguage].journeyFound(visibleCount) : '';
+  document.querySelector('#destination-grid').setAttribute('aria-busy', 'false');
+  searchForm.classList.remove('is-loading');
+  searchForm.querySelector('button[type="submit"]').removeAttribute('aria-busy');
+}
+
+function filterTrips(event) {
+  event.preventDefault();
+  window.clearTimeout(searchTimer);
+  const grid = document.querySelector('#destination-grid');
+  grid.setAttribute('aria-busy', 'true');
+  searchForm.classList.add('is-loading');
+  searchForm.querySelector('button[type="submit"]').setAttribute('aria-busy', 'true');
+  resultMessage.textContent = 'Finding journeys for you…';
+  searchTimer = window.setTimeout(applyTripFilters, 260);
 }
 
 searchForm.addEventListener('submit', filterTrips);
-
-moodSelect.addEventListener('change', () => {
-  filterTrips({ preventDefault: () => {} });
-});
+moodSelect.addEventListener('change', () => filterTrips({ preventDefault: () => {} }));
 
 document.querySelectorAll('.save-button').forEach((button) => {
-  button.addEventListener('click', () => {
-    const isSaved = button.classList.toggle('saved');
-    button.textContent = isSaved ? '♥' : '♡';
-    const languageCopy = translations[currentLanguage];
-    button.setAttribute('aria-label', isSaved ? languageCopy.removeSaved : languageCopy[button.dataset.i18nAria]);
-  });
+  button.addEventListener('click', () => toggleSavedDestination(button));
 });
 
 menuToggle.addEventListener('click', () => {
@@ -358,5 +434,54 @@ document.addEventListener('click', (event) => {
   }
 });
 
+document.querySelector('.play-button').addEventListener('click', async () => {
+  if (!signedIn) await loadWishlist();
+  window.location.href = signedIn ? '/dashboard' : 'signin.html';
+});
+
+function initialiseScrollMotion() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || !('IntersectionObserver' in window)) return;
+  document.documentElement.classList.add('js-scroll');
+  const revealItems = document.querySelectorAll('.hero-content, .hero-note, .section-heading, .trip-search, .destination-card, .trust-strip, footer');
+  revealItems.forEach((item, index) => {
+    item.classList.add('reveal');
+    if (item.classList.contains('destination-card')) item.style.setProperty('--reveal-delay', `${Math.min((index % 6) * 55, 275)}ms`);
+  });
+  const observer = new IntersectionObserver((entries, instance) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      instance.unobserve(entry.target);
+    });
+  }, { threshold: .12 });
+  revealItems.forEach((item) => observer.observe(item));
+}
+
+function initialiseNavigationIndicators() {
+  if (!('IntersectionObserver' in window)) return;
+  const navigationLinks = [...document.querySelectorAll('.main-nav a')];
+  const sections = navigationLinks
+    .map((link) => ({ link, section: document.querySelector(link.getAttribute('href')) }))
+    .filter(({ section }) => section);
+  const observer = new IntersectionObserver((entries) => {
+    const activeEntry = entries
+      .filter((entry) => entry.isIntersecting)
+      .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+    if (!activeEntry) return;
+    sections.forEach(({ link, section }) => link.classList.toggle('active', section === activeEntry.target));
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: [0.05, 0.3] });
+  sections.forEach(({ section }) => observer.observe(section));
+}
+
+cards.forEach((card, index) => {
+  const image = card.querySelector('img');
+  if (index > 1) image.loading = 'lazy';
+  image.decoding = 'async';
+});
+
 applyLanguage(currentLanguage);
 loadCurrentUser();
+initialiseScrollMotion();
+initialiseNavigationIndicators();
+loadWishlist();
