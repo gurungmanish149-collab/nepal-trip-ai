@@ -36,9 +36,15 @@ def create_account(client):
             "password": "password123",
             "travelInterest": "mountains",
         },
+        headers=csrf_headers(client),
     )
     assert response.status_code == 201, response.get_json()
     return response.get_json()["user"]
+
+
+def csrf_headers(client):
+    response = client.get("/api/me")
+    return {"X-CSRF-Token": response.get_json()["csrf_token"]}
 
 
 def test_homepage_and_signin_pages_load(client):
@@ -46,6 +52,24 @@ def test_homepage_and_signin_pages_load(client):
     assert b"<span class=\"brand-mark\">G</span>" in client.get("/").data
     assert client.get("/signin.html").status_code == 200
     assert client.get("/signup.html").status_code == 200
+    response = client.get("/styles.css")
+    assert response.status_code == 200
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+
+
+def test_private_project_files_are_not_served_as_public_assets(client):
+    assert client.get("/app/database.py").status_code == 404
+    assert client.get("/instance/himalaya.sqlite3").status_code == 404
+    assert client.get("/README.md").status_code == 404
+
+
+def test_production_requires_configured_secret_key(monkeypatch):
+    monkeypatch.setenv("FLASK_ENV", "production")
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="SECRET_KEY"):
+        create_app()
 
 
 def test_dashboard_requires_login_and_legacy_route_redirects(client):
@@ -66,6 +90,16 @@ def test_dashboard_has_country_and_all_destination_options_without_budget_or_map
     assert b'name="budget"' not in response.data
     assert b"Map View" not in response.data
     assert b"Leaflet" not in response.data
+    assert b'id="trip-inquiry-form"' in response.data
+    assert b'id="planner-inquiry-list"' in response.data
+    assert b'name="csrf_token"' in response.data
+    assert response.data.count('class="planner-required">[必須]</span>'.encode()) == 5
+    assert all(f"Step {step}".encode() in response.data for step in range(1, 6))
+    assert all(text.encode() in response.data for text in ("Country（国）", "Destination（目的地）", "Departure date（出発日）", "Return date（帰国日）", "Season（旅行シーズン）"))
+    assert b'id="destination-preview-season"' in response.data
+    assert b'id="season" name="season" required' in response.data
+    assert b"countrySelect.addEventListener('change', clearAfterCountry)" in response.data
+    assert b"seasonSelect.addEventListener('change'" in response.data
 
 
 def test_destination_images_are_available():
@@ -87,7 +121,7 @@ def test_search_calculates_local_cost_and_airfare_without_budget_input(client):
             "destination": "Pokhara",
             "depart_date": departure,
             "return_date": returned,
-            "season": "",
+            "season": "spring",
         },
     )
     assert response.status_code == 200
@@ -95,6 +129,40 @@ def test_search_calculates_local_cost_and_airfare_without_budget_input(client):
     assert b"$1,400" in response.data
     assert b"$1,800" in response.data
     assert b"/dashboard/images/pokhara_image.jpg" in response.data
+
+
+def test_planner_requires_each_step_in_order_and_accepts_any_season(client):
+    create_account(client)
+    departure = (date.today() + timedelta(days=1)).isoformat()
+    returned = (date.today() + timedelta(days=6)).isoformat()
+    complete_payload = {
+        "country": "America",
+        "destination": "Pokhara",
+        "depart_date": departure,
+        "return_date": returned,
+        "season": "spring",
+    }
+    missing_steps = (
+        ("country", "Please choose a country."),
+        ("destination", "Please choose a Nepal destination."),
+        ("depart_date", "Please choose a departure date."),
+        ("return_date", "Please choose a return date after the departure date."),
+        ("season", "Please choose a season."),
+    )
+    for field, expected_message in missing_steps:
+        incomplete_payload = {**complete_payload, field: ""}
+        response = client.post("/dashboard/plan", data=incomplete_payload)
+        assert expected_message.encode() in response.data
+
+    invalid_return = client.post(
+        "/dashboard/plan",
+        data={**complete_payload, "return_date": departure},
+    )
+    assert b"Please enter valid travel dates." in invalid_return.data
+
+    any_season = client.post("/dashboard/plan", data={**complete_payload, "season": "any"})
+    assert any_season.status_code == 200
+    assert b"Destination matched your trip." in any_season.data
 
 
 def test_language_switch_preserves_selected_search_values(client):
@@ -143,9 +211,9 @@ def test_direct_signup_api_requires_unique_username(client):
         "password": "password123",
         "travelInterest": "mountains",
     }
-    first = client.post("/api/signup", json=payload)
+    first = client.post("/api/signup", json=payload, headers=csrf_headers(client))
     assert first.status_code == 201
     duplicate = dict(payload, email=f"another-{suffix}@example.com")
-    second = client.post("/api/signup", json=duplicate)
+    second = client.post("/api/signup", json=duplicate, headers=csrf_headers(client))
     assert second.status_code == 409
     assert "username" in second.get_json()["error"].lower()

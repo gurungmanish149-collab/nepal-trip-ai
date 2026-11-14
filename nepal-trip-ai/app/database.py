@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     travel_interest TEXT NOT NULL,
+    auth_version INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -32,6 +33,24 @@ CREATE TABLE IF NOT EXISTS saved_destinations (
     PRIMARY KEY (user_id, destination_name),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS trip_inquiries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    departure_country TEXT NOT NULL,
+    destination_name TEXT NOT NULL,
+    departure_date TEXT NOT NULL,
+    return_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS request_rate_limits (
+    bucket_hash TEXT PRIMARY KEY,
+    window_started_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL
+);
 """
 
 
@@ -41,6 +60,7 @@ def get_db():
         database_path.parent.mkdir(parents=True, exist_ok=True)
         g.db = sqlite3.connect(database_path)
         g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
 
@@ -62,10 +82,16 @@ def init_database():
     columns = [row[1] for row in database.execute("PRAGMA table_info(users)").fetchall()]
     if "username" not in columns:
         database.execute("ALTER TABLE users ADD COLUMN username TEXT")
+    if "auth_version" not in columns:
+        database.execute("ALTER TABLE users ADD COLUMN auth_version INTEGER NOT NULL DEFAULT 0")
 
     database.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username)")
     database.execute(
         "CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_lookup "
         "ON password_reset_tokens(token_hash, expires_at)"
+    )
+    database.execute(
+        "CREATE INDEX IF NOT EXISTS idx_trip_inquiries_user "
+        "ON trip_inquiries(user_id, created_at DESC)"
     )
     database.commit()

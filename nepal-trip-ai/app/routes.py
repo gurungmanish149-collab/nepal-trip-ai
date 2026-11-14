@@ -1,6 +1,10 @@
 import re
+import secrets
+import sqlite3
 import smtplib
+from datetime import date
 from email.message import EmailMessage
+from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template_string, request, session, send_from_directory
 
@@ -11,9 +15,13 @@ from .models import (
     create_user,
     find_user_by_email,
     find_user_by_username,
+    create_trip_inquiry,
     list_saved_destinations,
+    list_trip_inquiries,
     remove_saved_destination,
     reset_password_with_token,
+    rate_limit_exceeded,
+    revoke_password_reset_tokens,
     save_destination,
 )
 
@@ -24,10 +32,25 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 USERNAME_PATTERN = re.compile(r"^[a-z0-9._-]{3,30}$")
 ALLOWED_INTERESTS = {"mountains", "culture", "wildlife", "slow"}
 DESTINATIONS_BY_NAME = {destination["name"].lower(): destination["name"] for destination in DESTINATIONS}
+DESTINATIONS_BY_NAME.update({
+    name.lower(): name for name in (
+        "Everest Base Camp", "Pokhara Lakeside", "Chitwan Wild", "Annapurna Region",
+        "Bandipur", "Patan (Lalitpur)", "Langtang Region", "Palpa / Tansen",
+        "Manaslu Region", "Rara Lake", "Koshi Tappu", "Kanchenjunga Region",
+        "Bardiya", "Janakpur",
+    )
+})
+ALLOWED_DEPARTURE_COUNTRIES = {"Japan", "America", "Australia", "China", "Korea", "Mongolia", "UK"}
+
+
+def _string_value(payload, key):
+    value = payload.get(key, "")
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _reset_url(token):
-    return f"{request.url_root.rstrip('/')}/reset-password.html?token={token}"
+    base_url = current_app.config.get("PUBLIC_BASE_URL") or request.url_root.rstrip("/")
+    return f"{base_url}/reset-password.html#token={token}"
 
 
 def _send_password_reset_email(recipient, reset_url):
@@ -78,6 +101,36 @@ def signin_page():
 @pages.get("/signup.html")
 def signup_page():
     return serve_page("signup.html")
+
+
+@pages.get("/forgot-password.html")
+def forgot_password_page():
+    return serve_page("forgot-password.html")
+
+
+@pages.get("/reset-password.html")
+def reset_password_page():
+    return serve_page("reset-password.html")
+
+
+@pages.get("/styles.css")
+def stylesheet():
+    return serve_page("styles.css")
+
+
+@pages.get("/app.js")
+def application_script():
+    return serve_page("app.js")
+
+
+@pages.get("/images/<path:filename>")
+def public_image(filename):
+    return send_from_directory(Path(current_app.config["PROJECT_ROOT"]) / "images", filename)
+
+
+@pages.get("/app/images/<path:filename>")
+def application_image(filename):
+    return send_from_directory(Path(current_app.config["PROJECT_ROOT"]) / "app" / "images", filename)
 
 
 DASHBOARD_HTML = """
@@ -690,25 +743,20 @@ def dashboard_page():
     return redirect("/dashboard/", code=308)
 
 
-@pages.get("/<path:filename>")
-def public_file(filename):
-    return send_from_directory(current_app.config["PROJECT_ROOT"], filename)
-
-
 def validate_signup(payload):
-    full_name = payload.get("fullName", "").strip()
-    username = payload.get("username", "").strip().lower()
-    email = payload.get("email", "").strip().lower()
+    full_name = _string_value(payload, "fullName")
+    username = _string_value(payload, "username").lower()
+    email = _string_value(payload, "email").lower()
     password = payload.get("password", "")
-    travel_interest = payload.get("travelInterest", "")
+    travel_interest = _string_value(payload, "travelInterest")
 
-    if not full_name:
+    if not full_name or len(full_name) > 100:
         return None, "Please enter your name."
     if not username or not USERNAME_PATTERN.match(username):
         return None, "Please choose a username with 3-30 letters, numbers, dots, underscores, or dashes."
-    if not EMAIL_PATTERN.match(email):
+    if len(email) > 254 or not EMAIL_PATTERN.match(email):
         return None, "Please enter a valid email address."
-    if len(password) < 8:
+    if not isinstance(password, str) or len(password) < 8 or len(password) > 1024:
         return None, "Your password must be at least 8 characters."
     if travel_interest not in ALLOWED_INTERESTS:
         return None, "Please choose a travel style."
@@ -718,6 +766,10 @@ def validate_signup(payload):
 @auth_api.post("/signup")
 def signup():
     payload = request.get_json(silent=True) or request.form
+    if not hasattr(payload, "get"):
+        payload = {}
+    if rate_limit_exceeded("signup", request.remote_addr or "unknown", 10, 3600):
+        return jsonify({"error": "Too many account creation attempts. Please try again later."}), 429
     values, error = validate_signup(payload)
     if error:
         return jsonify({"error": error}), 400
@@ -728,36 +780,52 @@ def signup():
     if find_user_by_username(username) is not None:
         return jsonify({"error": "This username is already taken."}), 409
 
-    user = create_user(full_name, username, email, password, travel_interest)
+    try:
+        user = create_user(full_name, username, email, password, travel_interest)
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "That email or username is already in use."}), 409
     session.clear()
     session["user_id"] = user.id
     session["user_name"] = user.full_name
+    session["auth_version"] = user.auth_version
+    session["csrf_token"] = secrets.token_urlsafe(32)
     return jsonify({"message": "Account created successfully.", "user": {"name": user.full_name, "username": user.username, "email": user.email}}), 201
 
 
 @auth_api.post("/signin")
 def signin():
     payload = request.get_json(silent=True) or request.form
-    email = payload.get("email", "").strip().lower()
+    if not hasattr(payload, "get"):
+        payload = {}
+    email = _string_value(payload, "email").lower()
     password = payload.get("password", "")
+    if not isinstance(password, str) or len(password) > 1024:
+        password = ""
     user = authenticate_user(email, password)
     if user is None:
+        if rate_limit_exceeded("signin", request.remote_addr or "unknown", 10, 900):
+            return jsonify({"error": "Too many sign-in attempts. Please try again in a few minutes."}), 429
         return jsonify({"error": "Email or password is incorrect."}), 401
 
     session.clear()
     session["user_id"] = user.id
     session["user_name"] = user.full_name
+    session["auth_version"] = user.auth_version
+    session["csrf_token"] = secrets.token_urlsafe(32)
     return jsonify({"message": f"Welcome back, {user.full_name}.", "user": {"name": user.full_name, "email": user.email}})
 
 
 @auth_api.post("/password-reset/request")
 def request_password_reset():
     payload = request.get_json(silent=True) or request.form
-    email = payload.get("email", "").strip().lower()
-    if not EMAIL_PATTERN.match(email):
+    if not hasattr(payload, "get"):
+        payload = {}
+    email = _string_value(payload, "email").lower()
+    if len(email) > 254 or not EMAIL_PATTERN.match(email):
         return jsonify({"error": "Please enter a valid email address."}), 400
+    if rate_limit_exceeded("password-reset", request.remote_addr or "unknown", 5, 900):
+        return jsonify({"error": "Too many recovery requests. Please try again in a few minutes."}), 429
 
-    user = find_user_by_email(email)
     demo_mode = current_app.config.get("RESET_PASSWORD_DEMO_MODE", False)
     email_configured = bool(current_app.config.get("SMTP_HOST") and current_app.config.get("SMTP_FROM"))
 
@@ -766,6 +834,10 @@ def request_password_reset():
             "error": "Password recovery email is not configured for this environment. Please contact support."
         }), 503
 
+    if current_app.config.get("IS_PRODUCTION") and not current_app.config.get("PUBLIC_BASE_URL"):
+        return jsonify({"error": "Password recovery is not fully configured. Please contact support."}), 503
+
+    user = find_user_by_email(email)
     if user is None:
         return jsonify({
             "message": "If this email belongs to an account, password-reset instructions will be available shortly."
@@ -781,21 +853,29 @@ def request_password_reset():
         })
 
     if not _send_password_reset_email(user["email"], reset_url):
-        return jsonify({
-            "error": "We could not deliver a reset email. Please try again later or contact support."
-        }), 503
+        # Keep the response indistinguishable from the unknown-account path.
+        current_app.logger.warning("Password reset email could not be delivered.")
+        revoke_password_reset_tokens(user["id"])
 
-    return jsonify({"message": "If this email belongs to an account, password-reset instructions have been sent."})
+    return jsonify({
+        "message": "If this email belongs to an account, recovery instructions will arrive shortly. If they do not, contact support."
+    })
 
 
 @auth_api.post("/password-reset/confirm")
 def confirm_password_reset():
     payload = request.get_json(silent=True) or request.form
+    if not hasattr(payload, "get"):
+        payload = {}
     token = payload.get("token", "")
     password = payload.get("password", "")
     password_confirmation = payload.get("passwordConfirmation", "")
+    if not isinstance(token, str) or len(token) > 256:
+        return jsonify({"error": "This reset link is invalid or has expired. Request a new one."}), 400
+    if not isinstance(password, str) or not isinstance(password_confirmation, str):
+        return jsonify({"error": "Please enter a valid new password."}), 400
 
-    if len(password) < 8:
+    if len(password) < 8 or len(password) > 1024:
         return jsonify({"error": "Your password must be at least 8 characters."}), 400
     if password != password_confirmation:
         return jsonify({"error": "The passwords do not match."}), 400
@@ -815,7 +895,9 @@ def wishlist():
         return jsonify({"items": list_saved_destinations(user_id)})
 
     payload = request.get_json(silent=True) or request.form
-    requested_name = payload.get("destination", "").strip()
+    if not hasattr(payload, "get"):
+        payload = {}
+    requested_name = _string_value(payload, "destination")
     destination_name = DESTINATIONS_BY_NAME.get(requested_name.lower())
     if destination_name is None:
         return jsonify({"error": "Choose a destination from the current Nepal collection."}), 400
@@ -829,6 +911,56 @@ def wishlist():
     return jsonify({"message": message, "destination": destination_name})
 
 
+@auth_api.route("/trip-inquiries", methods=["GET", "POST"])
+def trip_inquiries():
+    user_id = session.get("user_id")
+    if user_id is None:
+        return jsonify({"error": "Please sign in to manage trip inquiries."}), 401
+
+    if request.method == "GET":
+        return jsonify({"items": list_trip_inquiries(user_id)})
+    if rate_limit_exceeded("trip-inquiry", str(user_id), 10, 3600):
+        return jsonify({"error": "Too many trip inquiries. Please try again later."}), 429
+
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    country = _string_value(payload, "departureCountry")
+    destination = _string_value(payload, "destination")
+    departure_raw = _string_value(payload, "departureDate")
+    return_raw = _string_value(payload, "returnDate")
+    if country not in ALLOWED_DEPARTURE_COUNTRIES:
+        return jsonify({"error": "Choose a departure country."}), 400
+    canonical_destination = DESTINATIONS_BY_NAME.get(destination.casefold())
+    if canonical_destination is None:
+        return jsonify({"error": "Choose a destination from the Nepal collection."}), 400
+
+    try:
+        departure = date.fromisoformat(departure_raw)
+        returning = date.fromisoformat(return_raw)
+    except ValueError:
+        return jsonify({"error": "Enter valid departure and return dates."}), 400
+    if departure < date.today():
+        return jsonify({"error": "Departure date cannot be in the past."}), 400
+    if returning <= departure or (returning - departure).days > 90:
+        return jsonify({"error": "Return date must be after departure and within 90 days."}), 400
+
+    inquiry_id = create_trip_inquiry(
+        user_id, country, canonical_destination, departure.isoformat(), returning.isoformat()
+    )
+    return jsonify({
+        "message": "Your inquiry was saved to your trip requests. This is not a confirmed booking and no payment was taken.",
+        "inquiry": {
+            "id": inquiry_id,
+            "departure_country": country,
+            "destination_name": canonical_destination,
+            "departure_date": departure.isoformat(),
+            "return_date": returning.isoformat(),
+            "status": "pending",
+        },
+    }), 201
+
+
 @auth_api.post("/signout")
 def signout():
     session.clear()
@@ -838,5 +970,8 @@ def signout():
 @auth_api.get("/me")
 def current_user():
     if "user_id" not in session:
-        return jsonify({"user": None})
-    return jsonify({"user": {"id": session["user_id"], "name": session["user_name"]}})
+        return jsonify({"user": None, "csrf_token": session.get("csrf_token")})
+    return jsonify({
+        "user": {"id": session["user_id"], "name": session["user_name"]},
+        "csrf_token": session.get("csrf_token"),
+    })

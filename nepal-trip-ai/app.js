@@ -10,6 +10,8 @@ const languageButton = document.querySelector('#language-button');
 const languageMenu = document.querySelector('#language-menu');
 const currentLanguageLabel = document.querySelector('#current-language');
 const authLink = document.querySelector('.sign-in');
+const hasHomeSearchUI = Boolean(searchForm && destinationInput && moodSelect && resultMessage && emptyState && cards.length);
+const hasLanguageControls = Boolean(languageButton && languageMenu && currentLanguageLabel);
 
 const translations = {
   en: {
@@ -222,6 +224,7 @@ let currentLanguage = localStorage.getItem('himalaya-language') || 'en';
 let currentUser = null;
 let savedDestinationNames = new Set();
 let signedIn = false;
+let csrfToken = '';
 let searchTimer;
 
 const heartIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></svg>';
@@ -232,6 +235,7 @@ toastRegion.setAttribute('aria-label', 'Notifications');
 document.body.append(toastRegion);
 
 function updateAuthLink() {
+  if (!authLink) return;
   const languageCopy = translations[currentLanguage];
   authLink.textContent = currentUser ? `${currentUser.name} · ${languageCopy.signOut}` : languageCopy.signIn;
   authLink.href = currentUser ? '#top' : 'signin.html';
@@ -244,23 +248,29 @@ async function loadCurrentUser() {
     if (!response.ok) return;
     const result = await response.json();
     currentUser = result.user;
+    csrfToken = result.csrf_token || csrfToken;
     updateAuthLink();
   } catch (error) {
     console.error('Unable to check the current user.', error);
   }
 }
 
-authLink.addEventListener('click', async (event) => {
-  if (!currentUser) return;
-  event.preventDefault();
-  try {
-    const response = await fetch('/api/signout', { method: 'POST' });
-    if (!response.ok) throw new Error('Unable to sign out.');
-    window.location.reload();
-  } catch (error) {
-    console.error(error);
-  }
-});
+if (authLink) {
+  authLink.addEventListener('click', async (event) => {
+    if (!currentUser) return;
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/signout', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrfToken }
+      });
+      if (!response.ok) throw new Error('Unable to sign out.');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+    }
+  });
+}
 
 function showToast(message, variant = 'success') {
   const toast = document.createElement('div');
@@ -284,7 +294,9 @@ function applyLanguage(language) {
   currentLanguage = translations[language] ? language : 'en';
   const languageCopy = translations[currentLanguage];
   document.documentElement.lang = currentLanguage;
-  currentLanguageLabel.textContent = languageCopy.label;
+  if (currentLanguageLabel) {
+    currentLanguageLabel.textContent = languageCopy.label;
+  }
 
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     element.textContent = languageCopy[element.dataset.i18n];
@@ -306,7 +318,7 @@ function applyLanguage(language) {
   localStorage.setItem('himalaya-language', currentLanguage);
   updateSaveLabels();
   updateAuthLink();
-  if (resultMessage.textContent) {
+  if (resultMessage && resultMessage.textContent) {
     const visibleCount = cards.filter((card) => !card.hidden).length;
     resultMessage.textContent = visibleCount ? languageCopy.journeyFound(visibleCount) : '';
   }
@@ -322,6 +334,7 @@ async function loadWishlist() {
   try {
     const userResponse = await fetch('/api/me');
     const userData = await userResponse.json();
+    csrfToken = userData.csrf_token || csrfToken;
     signedIn = Boolean(userData.user);
     if (!signedIn) return;
 
@@ -347,7 +360,7 @@ async function toggleSavedDestination(button) {
   try {
     const response = await fetch('/api/wishlist', {
       method: isSaved ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
       body: JSON.stringify({ destination })
     });
     const result = await response.json();
@@ -394,50 +407,59 @@ function filterTrips(event) {
   searchTimer = window.setTimeout(applyTripFilters, 260);
 }
 
-searchForm.addEventListener('submit', filterTrips);
-moodSelect.addEventListener('change', () => filterTrips({ preventDefault: () => {} }));
+if (searchForm && moodSelect && destinationInput) {
+  searchForm.addEventListener('submit', filterTrips);
+  moodSelect.addEventListener('change', () => filterTrips({ preventDefault: () => {} }));
+}
 
 document.querySelectorAll('.save-button').forEach((button) => {
   button.addEventListener('click', () => toggleSavedDestination(button));
 });
 
-menuToggle.addEventListener('click', () => {
-  const isOpen = mainNav.classList.toggle('open');
-  menuToggle.setAttribute('aria-expanded', String(isOpen));
-  menuToggle.setAttribute('aria-label', isOpen ? translations[currentLanguage].closeMenu : translations[currentLanguage].openMenu);
-});
-
-document.querySelectorAll('.main-nav a').forEach((link) => {
-  link.addEventListener('click', () => {
-    mainNav.classList.remove('open');
-    menuToggle.setAttribute('aria-expanded', 'false');
+if (menuToggle && mainNav) {
+  menuToggle.addEventListener('click', () => {
+    const isOpen = mainNav.classList.toggle('open');
+    menuToggle.setAttribute('aria-expanded', String(isOpen));
+    menuToggle.setAttribute('aria-label', isOpen ? translations[currentLanguage].closeMenu : translations[currentLanguage].openMenu);
   });
-});
 
-languageButton.addEventListener('click', () => {
-  const isOpen = languageMenu.classList.toggle('open');
-  languageButton.setAttribute('aria-expanded', String(isOpen));
-});
-
-document.querySelectorAll('[data-language]').forEach((option) => {
-  option.addEventListener('click', () => {
-    applyLanguage(option.dataset.language);
-    languageMenu.classList.remove('open');
-    languageButton.setAttribute('aria-expanded', 'false');
+  document.querySelectorAll('.main-nav a').forEach((link) => {
+    link.addEventListener('click', () => {
+      mainNav.classList.remove('open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+    });
   });
-});
+}
 
-document.addEventListener('click', (event) => {
-  if (!event.target.closest('.language-picker')) {
-    languageMenu.classList.remove('open');
-    languageButton.setAttribute('aria-expanded', 'false');
-  }
-});
+if (languageButton && languageMenu && currentLanguageLabel) {
+  languageButton.addEventListener('click', () => {
+    const isOpen = languageMenu.classList.toggle('open');
+    languageButton.setAttribute('aria-expanded', String(isOpen));
+  });
 
-document.querySelector('.play-button').addEventListener('click', async () => {
-  if (!signedIn) await loadWishlist();
-  window.location.href = signedIn ? '/dashboard' : 'signin.html';
-});
+  document.querySelectorAll('[data-language]').forEach((option) => {
+    option.addEventListener('click', () => {
+      applyLanguage(option.dataset.language);
+      languageMenu.classList.remove('open');
+      languageButton.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.language-picker')) {
+      languageMenu.classList.remove('open');
+      languageButton.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+const playButton = document.querySelector('.play-button');
+if (playButton) {
+  playButton.addEventListener('click', async () => {
+    if (!signedIn) await loadWishlist();
+    window.location.href = signedIn ? '/dashboard' : 'signin.html';
+  });
+}
 
 function initialiseScrollMotion() {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

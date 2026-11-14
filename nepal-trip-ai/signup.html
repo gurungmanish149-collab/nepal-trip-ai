@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -77,9 +77,11 @@
       const formData = new FormData(signUpForm);
 
       try {
+        const sessionResponse = await fetch('/api/me');
+        const sessionData = await sessionResponse.json();
         const response = await fetch('/api/signup', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionData.csrf_token },
           body: JSON.stringify({
             fullName: formData.get('fullName'),
             username: formData.get('username'),

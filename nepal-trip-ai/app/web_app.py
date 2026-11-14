@@ -157,6 +157,7 @@ TRANSLATIONS = {
         "planner_intro": "Choose your country, destination, and travel dates.",
         "country_placeholder": "Select country",
         "destination_placeholder": "Select destination",
+        "season_placeholder": "Select season",
         "any_season": "Any season",
         "places_eyebrow": "Explore Nepal",
         "places_title": "Places to discover.",
@@ -174,8 +175,11 @@ TRANSLATIONS = {
         "dialog_dates_note": "Choose travel dates to calculate the trip total.",
         "error_past_date": "Departure date cannot be in the past.",
         "error_invalid_date": "Please enter valid travel dates.",
+        "error_departure": "Please choose a departure date.",
+        "error_return": "Please choose a return date after the departure date.",
         "error_country": "Please choose a country.",
         "error_destination": "Please choose a Nepal destination.",
+        "error_season": "Please choose a season.",
         "details": "Destination Details",
         "select": "Select",
         "placeholder": "Culture / Food / Trekking / Nature / Adventure / History",
@@ -226,6 +230,7 @@ TRANSLATIONS = {
         "planner_intro": "出発国、目的地、旅行日程を選択してください。",
         "country_placeholder": "国を選択",
         "destination_placeholder": "目的地を選択",
+        "season_placeholder": "季節を選択",
         "any_season": "すべての季節",
         "places_eyebrow": "ネパールを探す",
         "places_title": "訪れたい場所。",
@@ -243,8 +248,11 @@ TRANSLATIONS = {
         "dialog_dates_note": "旅行日を選択すると旅行費用を計算できます。",
         "error_past_date": "出発日に過去の日付は選択できません。",
         "error_invalid_date": "有効な旅行日を入力してください。",
+        "error_departure": "出発日を選択してください。",
+        "error_return": "出発日より後の帰国日を選択してください。",
         "error_country": "出発国を選択してください。",
         "error_destination": "ネパールの目的地を選択してください。",
+        "error_season": "季節を選択してください。",
         "details": "観光地の詳細",
         "select": "選択",
         "placeholder": "文化, トレッキング, 自然",
@@ -295,6 +303,7 @@ TRANSLATIONS = {
         "planner_intro": "选择出发国家、目的地和旅行日期。",
         "country_placeholder": "选择国家",
         "destination_placeholder": "选择目的地",
+        "season_placeholder": "选择季节",
         "any_season": "任何季节",
         "places_eyebrow": "探索尼泊尔",
         "places_title": "值得发现的地方。",
@@ -312,8 +321,11 @@ TRANSLATIONS = {
         "dialog_dates_note": "选择旅行日期以计算总费用。",
         "error_past_date": "出发日期不能早于今天。",
         "error_invalid_date": "请输入有效的旅行日期。",
+        "error_departure": "请选择出发日期。",
+        "error_return": "请选择晚于出发日期的返程日期。",
         "error_country": "请选择出发国家。",
         "error_destination": "请选择尼泊尔目的地。",
+        "error_season": "请选择旅行季节。",
         "details": "目的地详情",
         "select": "选择",
         "placeholder": "文化, 徒步, 自然",
@@ -364,6 +376,7 @@ TRANSLATIONS = {
         "planner_intro": "출발 국가, 여행지와 여행 날짜를 선택하세요.",
         "country_placeholder": "국가 선택",
         "destination_placeholder": "여행지 선택",
+        "season_placeholder": "시즌 선택",
         "any_season": "모든 시즌",
         "places_eyebrow": "네팔 둘러보기",
         "places_title": "발견할 여행지.",
@@ -381,8 +394,11 @@ TRANSLATIONS = {
         "dialog_dates_note": "여행 비용을 계산하려면 여행 날짜를 선택하세요.",
         "error_past_date": "출발일은 오늘 이전으로 선택할 수 없습니다.",
         "error_invalid_date": "유효한 여행 날짜를 입력하세요.",
+        "error_departure": "출발일을 선택하세요.",
+        "error_return": "출발일 이후의 귀국일을 선택하세요.",
         "error_country": "출발 국가를 선택하세요.",
         "error_destination": "네팔 여행지를 선택하세요.",
+        "error_season": "여행 시즌을 선택하세요.",
         "details": "여행지 정보",
         "select": "선택",
         "placeholder": "문화, 트레킹, 자연",
@@ -1205,6 +1221,7 @@ HTML = """
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{{ title }} | Himalaya</title>
   <style>
     body {
@@ -1352,7 +1369,7 @@ HTML = """
     </a>
     <nav class="main-nav" id="planner-nav" aria-label="Main navigation">
       <a href="/#explore">{{ nav_explore }}</a>
-      <a class="active" href="#planner">{{ nav_trips }}</a>
+      <a class="active" href="#trip-requests">{{ nav_trips }}</a>
       <a href="#results">{{ nav_recommendations }}</a>
     </nav>
     <div class="header-actions">
@@ -1367,6 +1384,7 @@ HTML = """
       </select>
       </label>
       <form class="planner-logout" method="post" action="/dashboard/signout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <button class="sign-in" type="submit">{{ sign_out }}</button>
       </form>
       <button class="menu-toggle" id="planner-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
@@ -1395,11 +1413,11 @@ HTML = """
         <p class="section-intro">{{ planner_intro }}</p>
       </div>
 
-    <form class="planner-form" method="post" action="/dashboard/plan?lang={{ selected_language }}">
+    <form class="planner-form" method="post" action="/dashboard/plan?lang={{ selected_language }}" novalidate>
       <input type="hidden" name="language" value="{{ selected_language }}">
 
       <div class="planner-field">
-        <label for="country">{{ country }}</label>
+        <label for="country"><span class="planner-step-label"><span><span class="planner-step-number">Step 1</span> {{ country }}（国）</span><span class="planner-required">[必須]</span></span></label>
         <select id="country" name="country" required>
           <option value="" disabled {% if not selected_country %}selected{% endif %}>{{ country_placeholder }}</option>
           {% for country_option in countries %}
@@ -1409,8 +1427,8 @@ HTML = """
       </div>
 
       <div class="planner-field">
-        <label for="destination">{{ destination }}</label>
-        <select id="destination" name="destination" required>
+        <label for="destination"><span class="planner-step-label"><span><span class="planner-step-number">Step 2</span> {{ destination }}（目的地）</span><span class="planner-required">[必須]</span></span></label>
+        <select id="destination" name="destination" required {% if not selected_country %}disabled{% endif %}>
           <option value="" disabled {% if not selected_destination %}selected{% endif %}>{{ destination_placeholder }}</option>
           {% for place in destinations %}
           <option value="{{ place.name }}" {% if selected_destination == place.name %}selected{% endif %}>{{ place.name }}</option>
@@ -1419,19 +1437,20 @@ HTML = """
       </div>
 
       <div class="planner-field">
-        <label for="depart-date">{{ depart_date }}</label>
-        <input id="depart-date" type="date" name="depart_date" value="{{ selected_depart_date }}" min="{{ min_depart_date }}" required>
+        <label for="depart-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 3</span> {{ depart_date }}（出発日）</span><span class="planner-required">[必須]</span></span></label>
+        <input id="depart-date" type="date" name="depart_date" value="{{ selected_depart_date }}" min="{{ min_depart_date }}" required {% if not selected_destination %}disabled{% endif %}>
       </div>
 
       <div class="planner-field">
-        <label for="return-date">{{ return_date }}</label>
-        <input id="return-date" type="date" name="return_date" value="{{ selected_return_date }}" min="{{ min_return_date }}" required>
+        <label for="return-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 4</span> {{ return_date }}（帰国日）</span><span class="planner-required">[必須]</span></span></label>
+        <input id="return-date" type="date" name="return_date" value="{{ selected_return_date }}" min="{{ min_return_date }}" required {% if not selected_depart_date %}disabled{% endif %}>
       </div>
 
       <div class="planner-field">
-        <label for="season">{{ season }}</label>
-        <select id="season" name="season">
-          <option value="" {% if not selected_season %}selected{% endif %}>{{ any_season }}</option>
+        <label for="season"><span class="planner-step-label"><span><span class="planner-step-number">Step 5</span> {{ season }}（旅行シーズン）</span><span class="planner-required">[必須]</span></span></label>
+        <select id="season" name="season" required {% if not selected_return_date %}disabled{% endif %}>
+          <option value="" disabled {% if not selected_season %}selected{% endif %}>{{ season_placeholder }}</option>
+          <option value="any" {% if selected_season == "any" %}selected{% endif %}>{{ any_season }}</option>
           <option value="spring" {% if selected_season == "spring" %}selected{% endif %}>{{ season_spring }}</option>
           <option value="summer" {% if selected_season == "summer" %}selected{% endif %}>{{ season_summer }}</option>
           <option value="autumn" {% if selected_season == "autumn" %}selected{% endif %}>{{ season_autumn }}</option>
@@ -1440,8 +1459,9 @@ HTML = """
       </div>
 
       <div class="planner-submit">
-        <button class="search-button" type="submit">{{ search }} <span>→</span></button>
+        <button class="search-button" id="planner-submit" type="submit" {% if not selected_season %}disabled{% endif %}>{{ search }} <span>→</span></button>
       </div>
+      <p class="planner-step-status" id="planner-step-status" role="status" aria-live="polite"></p>
     </form>
 
     <section class="planner-places" id="place-gallery" aria-labelledby="places-title">
@@ -1471,6 +1491,7 @@ HTML = """
             <div><dt>{{ dialog_region }}</dt><dd id="destination-preview-region"></dd></div>
             <div><dt>{{ dialog_daily_cost }}</dt><dd id="destination-preview-daily"></dd></div>
             <div><dt>{{ dialog_trip_cost }}</dt><dd id="destination-preview-trip"></dd></div>
+            <div><dt>{{ season }}</dt><dd id="destination-preview-season"></dd></div>
             <div><dt>{{ dialog_flight_cost }}</dt><dd id="destination-preview-flight"></dd></div>
             <div><dt>{{ dialog_total }}</dt><dd id="destination-preview-total"></dd></div>
           </dl>
@@ -1478,6 +1499,24 @@ HTML = """
           <p><strong>{{ dialog_best_for }}:</strong> <span id="destination-preview-best-for"></span></p>
           <p><strong>{{ dialog_interests }}:</strong> <span id="destination-preview-interests"></span></p>
           <p class="destination-preview-note">{{ dialog_estimate_note }}</p>
+          <form class="trip-inquiry-form" id="trip-inquiry-form">
+            <input id="trip-inquiry-destination" name="destination" type="hidden">
+            <p class="trip-inquiry-heading">Interested in this journey?</p>
+            <div class="trip-inquiry-fields">
+              <label for="trip-inquiry-country">Departure country
+                <input id="trip-inquiry-country" name="departureCountry" type="text" readonly required>
+              </label>
+              <label for="trip-inquiry-departure">Departure date
+                <input id="trip-inquiry-departure" name="departureDate" type="date" required>
+              </label>
+              <label for="trip-inquiry-return">Return date
+                <input id="trip-inquiry-return" name="returnDate" type="date" required>
+              </label>
+            </div>
+            <button class="trip-inquiry-submit" type="submit">Request trip details <span aria-hidden="true">→</span></button>
+            <p class="trip-inquiry-note">This is a non-binding inquiry, not a confirmed booking. No payment is taken.</p>
+            <p class="trip-inquiry-status" id="trip-inquiry-status" role="status" aria-live="polite"></p>
+          </form>
           <button class="search-button" id="destination-dialog-close-action" type="button">{{ dialog_close }}</button>
         </div>
       </div>
@@ -1509,6 +1548,19 @@ HTML = """
     </div>
     {% endif %}
     </section>
+
+    <section class="planner-inquiries" id="trip-requests" aria-labelledby="trip-requests-title">
+      <div class="planner-results-heading">
+        <div>
+          <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span>My plans</p>
+          <h2 id="trip-requests-title">Trip <em>inquiries.</em></h2>
+        </div>
+        <p>Review your saved requests. Each inquiry is non-binding and remains pending until separately confirmed.</p>
+      </div>
+      <div class="planner-inquiry-list" id="planner-inquiry-list" aria-live="polite">
+        <p class="planner-inquiry-empty">Loading your trip inquiries…</p>
+      </div>
+    </section>
   </main>
   <footer class="planner-footer"><span>© 2025 Himalaya</span><a href="/">{{ footer_explore }}</a></footer>
 
@@ -1520,12 +1572,18 @@ HTML = """
     const plannerForm = document.querySelector('.planner-form');
     const countrySelect = document.querySelector('#country');
     const destinationSelect = document.querySelector('#destination');
+    const seasonSelect = document.querySelector('#season');
+    const plannerSubmit = document.querySelector('#planner-submit');
+    const plannerStepStatus = document.querySelector('#planner-step-status');
     const destinationDialog = document.querySelector('#destination-dialog');
     const destinationGallery = document.querySelector('#place-gallery');
     const destinationCatalog = {{ destination_catalog|tojson|safe }};
     const destinationDetailTranslations = {{ destination_detail_translations|tojson|safe }};
     const airfareByCountry = {{ airfare_by_country|tojson|safe }};
     const domesticFlightByDestination = {{ domestic_flight_by_destination|tojson|safe }};
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+    const inquiryForm = document.querySelector('#trip-inquiry-form');
+    const inquiryList = document.querySelector('#planner-inquiry-list');
     const plannerCopy = {
       datesNote: {{ dialog_dates_note|tojson|safe }},
       dailyCost: {{ dialog_daily_cost|tojson|safe }},
@@ -1535,6 +1593,7 @@ HTML = """
       bestFor: {{ dialog_best_for|tojson|safe }},
       interests: {{ dialog_interests|tojson|safe }}
     };
+    let activeInquiryDestination = null;
     plannerMenuToggle.addEventListener('click', () => {
       const isOpen = plannerNav.classList.toggle('open');
       plannerMenuToggle.setAttribute('aria-expanded', String(isOpen));
@@ -1555,10 +1614,112 @@ HTML = """
       document.querySelector(id).textContent = value;
     }
 
+    function firstIncompleteStep() {
+      const steps = [
+        { complete: Boolean(countrySelect.value), field: countrySelect, label: 'Country（国）' },
+        { complete: Boolean(destinationSelect.value), field: destinationSelect, label: 'Destination（目的地）' },
+        {
+          complete: Boolean(departDateInput.value) && departDateInput.value >= departDateInput.min,
+          field: departDateInput,
+          label: 'Departure Date（出発日）'
+        },
+        {
+          complete: Boolean(returnDateInput.value) && returnDateInput.value > departDateInput.value,
+          field: returnDateInput,
+          label: 'Return Date（帰国日）'
+        },
+        { complete: Boolean(seasonSelect.value), field: seasonSelect, label: 'Season（旅行シーズン）' }
+      ];
+      return steps.find((step) => !step.complete);
+    }
+
+    function syncPlannerSteps() {
+      destinationSelect.disabled = !countrySelect.value;
+      departDateInput.disabled = !destinationSelect.value;
+      const departureIsValid = Boolean(departDateInput.value) && departDateInput.value >= departDateInput.min;
+      returnDateInput.disabled = !departureIsValid;
+      const returnIsValid = departureIsValid && Boolean(returnDateInput.value)
+        && returnDateInput.value > departDateInput.value;
+      seasonSelect.disabled = !returnIsValid;
+      const incompleteStep = firstIncompleteStep();
+      plannerSubmit.disabled = Boolean(incompleteStep);
+      if (plannerStepStatus) {
+        plannerStepStatus.textContent = incompleteStep
+          ? `Please complete Step ${[
+            countrySelect, destinationSelect, departDateInput, returnDateInput, seasonSelect
+          ].indexOf(incompleteStep.field) + 1}: ${incompleteStep.label} [必須].`
+          : 'All required steps are complete. Destination information is ready.';
+      }
+    }
+
+    function clearAfterCountry() {
+      destinationSelect.value = '';
+      clearAfterDestination();
+      syncPlannerSteps();
+      if (destinationDialog.open) destinationDialog.close();
+    }
+
+    function clearAfterDestination() {
+      departDateInput.value = '';
+      returnDateInput.value = '';
+      returnDateInput.min = departDateInput.min;
+      seasonSelect.value = '';
+      activeInquiryDestination = null;
+      if (destinationDialog.open) destinationDialog.close();
+    }
+
+    function renderTripInquiries(items) {
+      inquiryList.replaceChildren();
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'planner-inquiry-empty';
+        empty.textContent = 'No trip inquiries yet. Explore a destination to save a request.';
+        inquiryList.append(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement('article');
+        card.className = 'planner-inquiry-card';
+        const title = document.createElement('h3');
+        title.textContent = item.destination_name;
+        const dates = document.createElement('p');
+        dates.textContent = `${item.departure_country} · ${item.departure_date} → ${item.return_date}`;
+        const status = document.createElement('span');
+        status.className = 'planner-inquiry-status-badge';
+        status.textContent = item.status;
+        card.append(title, dates, status);
+        inquiryList.append(card);
+      });
+    }
+
+    async function loadTripInquiries() {
+      try {
+        const response = await fetch('/api/trip-inquiries');
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to load trip inquiries.');
+        renderTripInquiries(result.items);
+      } catch {
+        inquiryList.replaceChildren();
+        const message = document.createElement('p');
+        message.className = 'planner-inquiry-empty';
+        message.textContent = 'Trip inquiries are temporarily unavailable.';
+        inquiryList.append(message);
+      }
+    }
+
     function showDestinationPreview() {
       const destination = destinationCatalog.find((place) => place.name === destinationSelect.value);
       const country = countrySelect.value;
-      if (!destination || !country) return;
+      const allStepsComplete = destination && country && departDateInput.value
+        && returnDateInput.value && seasonSelect.value;
+      const validDates = departDateInput.value >= departDateInput.min
+        && returnDateInput.value > departDateInput.value;
+      if (!allStepsComplete || !validDates) {
+        activeInquiryDestination = null;
+        if (destinationDialog.open) destinationDialog.close();
+        return;
+      }
 
       const departDate = departDateInput.value ? new Date(`${departDateInput.value}T00:00:00Z`) : null;
       const returnDate = returnDateInput.value ? new Date(`${returnDateInput.value}T00:00:00Z`) : null;
@@ -1569,6 +1730,7 @@ HTML = """
       const airfare = (airfareByCountry[country] || 0) + (domesticFlightByDestination[destination.name] || 0);
       const image = document.querySelector('#destination-preview-image');
       const localizedDetails = destinationDetailTranslations[destination.name] || {};
+      activeInquiryDestination = destination.name;
 
       image.src = destination.image_url;
       image.alt = destination.name;
@@ -1576,36 +1738,104 @@ HTML = """
       setPreviewValue('#destination-preview-country', country);
       setPreviewValue('#destination-preview-region', localizedDetails.region || destination.region);
       setPreviewValue('#destination-preview-daily', displayMoney(destination.daily_cost));
-      setPreviewValue('#destination-preview-trip', days ? displayMoney(tripCost) : plannerCopy.datesNote);
+      setPreviewValue('#destination-preview-trip', displayMoney(tripCost));
+      setPreviewValue('#destination-preview-season', seasonSelect.options[seasonSelect.selectedIndex].text);
       setPreviewValue('#destination-preview-flight', displayMoney(airfare));
       setPreviewValue('#destination-preview-total', displayMoney(tripCost + airfare));
       setPreviewValue('#destination-preview-description', localizedDetails.description || destination.description);
       setPreviewValue('#destination-preview-best-for', (localizedDetails.best_for || destination.best_for).join(', '));
       setPreviewValue('#destination-preview-interests', (localizedDetails.interests || destination.interests).join(', '));
+      inquiryForm.elements.destination.value = destination.name;
+      inquiryForm.elements.departureCountry.value = country;
+      inquiryForm.elements.departureDate.value = departDateInput.value;
+      inquiryForm.elements.returnDate.value = returnDateInput.value;
+      inquiryForm.elements.departureDate.min = departDateInput.min;
+      inquiryForm.elements.returnDate.min = departDateInput.min;
+      if (departDateInput.value) {
+        const earliestReturn = new Date(`${departDateInput.value}T00:00:00Z`);
+        earliestReturn.setUTCDate(earliestReturn.getUTCDate() + 1);
+        inquiryForm.elements.returnDate.min = earliestReturn.toISOString().slice(0, 10);
+      }
+      document.querySelector('#trip-inquiry-status').textContent = '';
+      inquiryForm.querySelector('button[type="submit"]').disabled = false;
+      inquiryForm.querySelector('button[type="submit"]').textContent = 'Request trip details →';
       destinationGallery.hidden = true;
       if (!destinationDialog.open) destinationDialog.showModal();
     }
 
-    countrySelect.addEventListener('change', showDestinationPreview);
-    destinationSelect.addEventListener('change', showDestinationPreview);
-    if (countrySelect.value && destinationSelect.value) showDestinationPreview();
+    inquiryForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = inquiryForm.querySelector('button[type="submit"]');
+      const status = document.querySelector('#trip-inquiry-status');
+      if (!activeInquiryDestination || !inquiryForm.reportValidity()) return;
+      submit.disabled = true;
+      status.textContent = 'Sending your trip inquiry…';
+      const values = new FormData(inquiryForm);
+      try {
+        const response = await fetch('/api/trip-inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+          body: JSON.stringify({
+            departureCountry: values.get('departureCountry'),
+            destination: activeInquiryDestination,
+            departureDate: values.get('departureDate'),
+            returnDate: values.get('returnDate')
+          })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to send your inquiry.');
+        status.textContent = `${result.message} Reference #${result.inquiry.id}.`;
+        submit.textContent = 'Inquiry received';
+        loadTripInquiries();
+      } catch (error) {
+        status.textContent = error.message;
+        submit.disabled = false;
+      }
+    });
+
+    plannerForm.addEventListener('submit', (event) => {
+      const incompleteStep = firstIncompleteStep();
+      if (!incompleteStep) return;
+      event.preventDefault();
+      syncPlannerSteps();
+      incompleteStep.field.focus();
+    });
+    countrySelect.addEventListener('change', clearAfterCountry);
+    destinationSelect.addEventListener('change', () => {
+      clearAfterDestination();
+      syncPlannerSteps();
+    });
+    returnDateInput.addEventListener('change', () => {
+      seasonSelect.value = '';
+      activeInquiryDestination = null;
+      if (destinationDialog.open) destinationDialog.close();
+      syncPlannerSteps();
+    });
+    seasonSelect.addEventListener('change', () => {
+      syncPlannerSteps();
+      showDestinationPreview();
+    });
+    syncPlannerSteps();
     destinationDialog.addEventListener('close', () => { destinationGallery.hidden = false; });
     document.querySelector('#destination-dialog-close').addEventListener('click', () => destinationDialog.close());
     document.querySelector('#destination-dialog-close-action').addEventListener('click', () => destinationDialog.close());
 
     departDateInput.addEventListener('change', () => {
-      if (!departDateInput.value) return;
+      if (!departDateInput.value) {
+        returnDateInput.value = '';
+        seasonSelect.value = '';
+        syncPlannerSteps();
+        showDestinationPreview();
+        return;
+      }
       const nextDay = new Date(`${departDateInput.value}T00:00:00Z`);
       nextDay.setUTCDate(nextDay.getUTCDate() + 1);
       returnDateInput.min = nextDay.toISOString().slice(0, 10);
-      if (returnDateInput.value && returnDateInput.value < returnDateInput.min) {
-        returnDateInput.value = '';
-      }
-      if (destinationDialog.open) showDestinationPreview();
+      returnDateInput.value = '';
+      seasonSelect.value = '';
+      syncPlannerSteps();
     });
-    returnDateInput.addEventListener('change', () => {
-      if (destinationDialog.open) showDestinationPreview();
-    });
+    loadTripInquiries();
   </script>
 </body>
 </html>
@@ -1693,7 +1923,13 @@ def plan_trip():
     flight_cost = 0
     translations = get_translation(selected_language)
 
-    if selected_depart_date:
+    if selected_country not in COUNTRIES:
+        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_country"]}
+    elif selected_destination not in {place["name"] for place in planner.destinations}:
+        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_destination"]}
+    elif not selected_depart_date:
+        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_departure"]}
+    else:
         try:
             departure_date = date.fromisoformat(selected_depart_date)
             if departure_date < today:
@@ -1703,20 +1939,24 @@ def plan_trip():
         except ValueError:
             result = {"recommendations": [], "estimated_total": 0, "message": translations["error_invalid_date"]}
 
-    if result is None and selected_country not in COUNTRIES:
-        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_country"]}
-    if result is None and selected_destination not in {place["name"] for place in planner.destinations}:
-        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_destination"]}
-
     if result is None:
-        try:
-            depart_date = date.fromisoformat(selected_depart_date)
-            return_date = date.fromisoformat(selected_return_date)
-            if return_date <= depart_date:
-                raise ValueError
-            trip_days_count = (return_date - depart_date).days
-        except ValueError:
-            result = {"recommendations": [], "estimated_total": 0, "message": translations["error_invalid_date"]}
+        if not selected_return_date:
+            result = {"recommendations": [], "estimated_total": 0, "message": translations["error_return"]}
+        else:
+            try:
+                depart_date = date.fromisoformat(selected_depart_date)
+                return_date = date.fromisoformat(selected_return_date)
+                if return_date <= depart_date:
+                    raise ValueError
+                trip_days_count = (return_date - depart_date).days
+            except ValueError:
+                result = {"recommendations": [], "estimated_total": 0, "message": translations["error_invalid_date"]}
+
+    if result is None and selected_season not in {"spring", "summer", "autumn", "winter", "any"}:
+        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_season"]}
+
+    if result is None and trip_days_count <= 0:
+        result = {"recommendations": [], "estimated_total": 0, "message": translations["error_invalid_date"]}
 
     if result is None:
         flight_cost = COUNTRY_AIRFARE_ESTIMATES_USD[selected_country] + DESTINATION_FLIGHT_ESTIMATES_USD.get(selected_destination, 0)
@@ -1727,7 +1967,7 @@ def plan_trip():
         budget_usd=None,
             region="",
             interests=[],
-            season=selected_season,
+            season="" if selected_season == "any" else selected_season,
             destination_name=selected_destination,
         )
         if result["recommendations"]:

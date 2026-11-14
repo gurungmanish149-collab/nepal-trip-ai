@@ -58,9 +58,11 @@
       const formData = new FormData(signInForm);
 
       try {
+        const sessionResponse = await fetch('/api/me');
+        const sessionData = await sessionResponse.json();
         const response = await fetch('/api/signin', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': sessionData.csrf_token },
           body: JSON.stringify({ email: formData.get('email'), password: formData.get('password') })
         });
         const result = await response.json();

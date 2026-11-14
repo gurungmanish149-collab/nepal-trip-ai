@@ -264,6 +264,12 @@ footer { background: #fbfcf9; }
 .planner-field small { color: var(--muted); font-size: 10px; }
 .planner-page .planner-field input, .planner-page .planner-field select { width: 100%; min-width: 0; height: 38px; padding: 0 8px; color: var(--ink); background: #fbfcf9; border: 1px solid #d3dcd5; border-radius: 2px; font-size: 12px; }
 .planner-page .planner-field input:focus, .planner-page .planner-field select:focus { outline: 2px solid rgba(236,173,69,.35); border-color: var(--saffron); }
+.planner-page .planner-field :is(input, select):disabled { color: #87918c; background: #eef1ed; cursor: not-allowed; }
+.planner-step-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.planner-step-number { color: #a56a27; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.planner-required { flex-shrink: 0; color: #a33b2f; font-size: 10px; font-weight: 700; }
+.planner-step-status { grid-column: 1 / -1; margin: 0; padding: 5px 15px 10px; color: #657572; font-size: 11px; }
+.planner-submit .search-button:disabled { opacity: .55; cursor: not-allowed; }
 .planner-submit { grid-column: 1 / -1; display: flex; justify-content: flex-end; padding: 10px 7px 2px; }
 .planner-page .planner-submit .search-button { min-height: 48px; padding: 0 22px; }
 .planner-page .planner-submit .search-button span { margin-left: 25px; }
@@ -366,6 +372,37 @@ footer { background: #fbfcf9; }
 	.destination-preview > img { height: 175px; }
 	.destination-preview-content { padding: 20px 16px; }
 	.destination-preview-facts { gap: 8px; }
+}
+
+.trip-inquiry-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+  padding: 18px;
+  background: #f0f4ef;
+  border: 1px solid #d9e2da;
+}
+.trip-inquiry-heading { margin: 0; color: var(--ink); font-family: 'Playfair Display', Georgia, serif; font-size: 19px; }
+.trip-inquiry-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.trip-inquiry-fields label { display: grid; gap: 6px; color: #64746f; font-size: 10px; font-weight: 600; }
+.trip-inquiry-fields input { min-width: 0; height: 40px; padding: 0 9px; color: var(--ink); background: white; border: 1px solid #d3dcd5; border-radius: 2px; font-size: 12px; }
+.trip-inquiry-fields input[readonly] { background: #e7ece7; }
+.trip-inquiry-submit { display: flex; align-items: center; justify-content: space-between; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--saffron); font-size: 12px; font-weight: 700; }
+.trip-inquiry-submit span { font-size: 18px; }
+.trip-inquiry-note, .trip-inquiry-status { margin: 0; color: #6d7a75; font-size: 10px; line-height: 1.5; }
+.trip-inquiry-status { color: #16544b; font-size: 12px; font-weight: 600; }
+.planner-inquiries { max-width: 1300px; margin: 0 auto; padding: 0 8vw 20px; scroll-margin-top: 24px; }
+.planner-inquiries .planner-results-heading { margin-bottom: 20px; }
+.planner-inquiries h2 { font-size: 36px; letter-spacing: -1px; }
+.planner-inquiries h2 em { color: #bd8030; }
+.planner-inquiry-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.planner-inquiry-empty { grid-column: 1 / -1; margin: 0; padding: 20px; color: var(--muted); background: white; border: 1px dashed var(--line); font-size: 12px; }
+.planner-inquiry-card { min-width: 0; padding: 17px; background: white; border: 1px solid #d9e0da; }
+.planner-inquiry-card h3 { margin: 0 0 8px; color: var(--ink); font-family: 'Playfair Display', Georgia, serif; font-size: 19px; font-weight: 500; }
+.planner-inquiry-card p { margin: 0 0 12px; color: #657572; font-size: 11px; line-height: 1.5; }
+.planner-inquiry-status-badge { display: inline-block; padding: 5px 8px; color: #73511d; background: #f7edd9; border-radius: 999px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
 /* Product motion and interaction layer */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: .18s ease both fade-out; }
@@ -430,6 +467,10 @@ button:disabled { cursor: not-allowed; opacity: .62; }
   .main-nav.open { display: flex; visibility: visible; opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
   .hero.app-dashboard { min-height: 620px; height: 78vh; padding-top: 120px; }
   .toast-region { bottom: 16px; }
+  .trip-inquiry-fields { grid-template-columns: 1fr; }
+  .trip-inquiry-form { padding: 14px; }
+  .planner-inquiries { padding: 0 6vw 10px; }
+  .planner-inquiry-list { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
