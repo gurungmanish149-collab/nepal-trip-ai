@@ -132,6 +132,43 @@ def build_destination_catalog():
 
 DESTINATION_CATALOG = build_destination_catalog()
 planner.destinations = DESTINATION_CATALOG
+DISCOVERY_CATEGORY_TERMS = {
+    "adventure": {"adventure", "rafting", "climbing"},
+    "nature": {"nature", "lake", "mountains", "sunrise", "tea", "birding", "jungle"},
+    "culture": {"culture", "heritage", "history", "religion", "food", "art", "photography"},
+    "trekking": {"trekking"},
+    "wildlife": {"wildlife", "birding", "jungle"},
+}
+
+
+def build_discover_destinations():
+    discover_destinations = []
+    seen_images = set()
+    for destination in DESTINATION_CATALOG:
+        image = destination.get("image_url")
+        if not image or image in seen_images:
+            continue
+        seen_images.add(image)
+        interests = {item.casefold() for item in destination.get("interests", [])}
+        best_for = {item.casefold() for item in destination.get("best_for", [])}
+        tags = interests | best_for
+        categories = [
+            category
+            for category, terms in DISCOVERY_CATEGORY_TERMS.items()
+            if tags.intersection(terms)
+        ]
+        discover_destinations.append({
+            "name": destination["name"],
+            "region": destination["region"],
+            "description": destination["description"],
+            "image": image,
+            "categories": categories,
+            "daily_cost": destination["daily_cost"],
+        })
+    return discover_destinations
+
+
+DISCOVER_DESTINATIONS = build_discover_destinations()
 
 TRANSLATIONS = {
     "en": {
@@ -1417,7 +1454,7 @@ HTML = """
       <input type="hidden" name="language" value="{{ selected_language }}">
 
       <div class="planner-field">
-        <label for="country"><span class="planner-step-label"><span><span class="planner-step-number">Step 1</span> {{ country }}（国）</span><span class="planner-required">[必須]</span></span></label>
+        <label for="country"><span class="planner-step-label"><span><span class="planner-step-number">Step 1</span> {{ country }}（国）</span></span></label>
         <select id="country" name="country" required>
           <option value="" disabled {% if not selected_country %}selected{% endif %}>{{ country_placeholder }}</option>
           {% for country_option in countries %}
@@ -1427,7 +1464,7 @@ HTML = """
       </div>
 
       <div class="planner-field">
-        <label for="destination"><span class="planner-step-label"><span><span class="planner-step-number">Step 2</span> {{ destination }}（目的地）</span><span class="planner-required">[必須]</span></span></label>
+        <label for="destination"><span class="planner-step-label"><span><span class="planner-step-number">Step 2</span> {{ destination }}（目的地）</span></span></label>
         <select id="destination" name="destination" required {% if not selected_country %}disabled{% endif %}>
           <option value="" disabled {% if not selected_destination %}selected{% endif %}>{{ destination_placeholder }}</option>
           {% for place in destinations %}
@@ -1437,17 +1474,17 @@ HTML = """
       </div>
 
       <div class="planner-field">
-        <label for="depart-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 3</span> {{ depart_date }}（出発日）</span><span class="planner-required">[必須]</span></span></label>
+        <label for="depart-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 3</span> {{ depart_date }}（出発日）</span></span></label>
         <input id="depart-date" type="date" name="depart_date" value="{{ selected_depart_date }}" min="{{ min_depart_date }}" required {% if not selected_destination %}disabled{% endif %}>
       </div>
 
       <div class="planner-field">
-        <label for="return-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 4</span> {{ return_date }}（帰国日）</span><span class="planner-required">[必須]</span></span></label>
+        <label for="return-date"><span class="planner-step-label"><span><span class="planner-step-number">Step 4</span> {{ return_date }}（帰国日）</span></span></label>
         <input id="return-date" type="date" name="return_date" value="{{ selected_return_date }}" min="{{ min_return_date }}" required {% if not selected_depart_date %}disabled{% endif %}>
       </div>
 
       <div class="planner-field">
-        <label for="season"><span class="planner-step-label"><span><span class="planner-step-number">Step 5</span> {{ season }}（旅行シーズン）</span><span class="planner-required">[必須]</span></span></label>
+        <label for="season"><span class="planner-step-label"><span><span class="planner-step-number">Step 5</span> {{ season }}（旅行シーズン）</span></span></label>
         <select id="season" name="season" required {% if not selected_return_date %}disabled{% endif %}>
           <option value="" disabled {% if not selected_season %}selected{% endif %}>{{ season_placeholder }}</option>
           <option value="any" {% if selected_season == "any" %}selected{% endif %}>{{ any_season }}</option>
@@ -1459,25 +1496,81 @@ HTML = """
       </div>
 
       <div class="planner-submit">
-        <button class="search-button" id="planner-submit" type="submit" {% if not selected_season %}disabled{% endif %}>{{ search }} <span>→</span></button>
+        <button class="search-button" id="planner-submit" type="submit">{{ search }} <span>→</span></button>
       </div>
       <p class="planner-step-status" id="planner-step-status" role="status" aria-live="polite"></p>
+      <button class="planner-preview-trigger" id="destination-preview-trigger" type="button" hidden>View trip estimate &amp; request details</button>
     </form>
+
+    <dialog class="itinerary-confirmation" id="itinerary-confirmation" aria-labelledby="itinerary-confirmation-title">
+      <div class="itinerary-confirmation-content">
+        <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span>Trip review</p>
+        <h2 id="itinerary-confirmation-title">Review your trip details</h2>
+        <p class="itinerary-confirmation-intro">Make sure everything looks right before we generate your itinerary.</p>
+        <dl class="itinerary-confirmation-details">
+          <div><dt>Country</dt><dd id="confirmation-country"></dd></div>
+          <div><dt>Destination</dt><dd id="confirmation-destination"></dd></div>
+          <div><dt>Departure date</dt><dd id="confirmation-departure"></dd></div>
+          <div><dt>Return date</dt><dd id="confirmation-return"></dd></div>
+          <div><dt>Season</dt><dd id="confirmation-season"></dd></div>
+        </dl>
+        <div class="itinerary-confirmation-actions">
+          <button class="itinerary-edit" id="itinerary-edit" type="button">Edit Details</button>
+          <button class="itinerary-confirm" id="itinerary-confirm" type="button">Confirm &amp; Generate Itinerary</button>
+        </div>
+      </div>
+    </dialog>
 
     <section class="planner-places" id="place-gallery" aria-labelledby="places-title">
       <div class="planner-places-heading">
         <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span>{{ places_eyebrow }}</p>
         <h2 id="places-title">{{ places_title }}</h2>
+        <p class="planner-places-intro">Find the landscape, culture, and pace that feel like your kind of Nepal.</p>
+      </div>
+      <div class="discover-toolbar">
+        <div class="discover-filters" role="group" aria-label="Filter destinations by category">
+          <button class="discover-filter is-active" type="button" data-category-filter="all" aria-pressed="true">All</button>
+          <button class="discover-filter" type="button" data-category-filter="adventure" aria-pressed="false">Adventure</button>
+          <button class="discover-filter" type="button" data-category-filter="nature" aria-pressed="false">Nature</button>
+          <button class="discover-filter" type="button" data-category-filter="culture" aria-pressed="false">Culture</button>
+          <button class="discover-filter" type="button" data-category-filter="trekking" aria-pressed="false">Trekking</button>
+          <button class="discover-filter" type="button" data-category-filter="wildlife" aria-pressed="false">Wildlife</button>
+        </div>
+        <button class="discover-view-all" id="discover-view-all" type="button" aria-expanded="false">View all destinations</button>
       </div>
       <div class="planner-places-grid">
-        {% for place in nepal_places %}
-        <article class="planner-place-card">
-          <img src="{{ place.image }}" alt="{{ place.name }}" loading="lazy">
-          <h3>{{ place.name }}</h3>
+        {% for place in discover_destinations %}
+        <article class="planner-place-card" data-discover-card data-categories="{{ place.categories|join(' ') }}">
+          <div class="planner-place-image">
+            <img src="{{ place.image }}" alt="{{ place.name }}" loading="lazy">
+            <span class="planner-place-region">{{ place.region }}</span>
+          </div>
+          <div class="planner-place-body">
+            <div class="planner-place-categories">
+              {% for category in place.categories %}
+              <span>{{ category|capitalize }}</span>
+              {% endfor %}
+            </div>
+            <h3>{{ place.name }}</h3>
+            <p>{{ place.description }}</p>
+            <button type="button" class="planner-place-explore" data-discover-open="{{ place.name }}">Explore destination <span aria-hidden="true">↗</span></button>
+          </div>
         </article>
         {% endfor %}
       </div>
     </section>
+
+    <dialog class="discover-dialog" id="discover-dialog" aria-labelledby="discover-dialog-title">
+      <button class="destination-dialog-close" id="discover-dialog-close" type="button" aria-label="Close destination details">×</button>
+      <img class="discover-dialog-image" id="discover-dialog-image" src="" alt="">
+      <div class="discover-dialog-content">
+        <p class="eyebrow dark-eyebrow"><span class="eyebrow-line"></span><span id="discover-dialog-category"></span></p>
+        <h2 id="discover-dialog-title"></h2>
+        <p class="discover-dialog-region" id="discover-dialog-region"></p>
+        <p class="discover-dialog-description" id="discover-dialog-description"></p>
+        <button class="itinerary-confirm" id="discover-dialog-plan" type="button">Plan this destination</button>
+      </div>
+    </dialog>
 
     <dialog class="destination-dialog" id="destination-dialog" aria-labelledby="destination-preview-title">
       <button class="destination-dialog-close" id="destination-dialog-close" type="button" aria-label="{{ dialog_close }}">×</button>
@@ -1575,9 +1668,13 @@ HTML = """
     const seasonSelect = document.querySelector('#season');
     const plannerSubmit = document.querySelector('#planner-submit');
     const plannerStepStatus = document.querySelector('#planner-step-status');
+    const plannerPreviewTrigger = document.querySelector('#destination-preview-trigger');
     const destinationDialog = document.querySelector('#destination-dialog');
     const destinationGallery = document.querySelector('#place-gallery');
     const destinationCatalog = {{ destination_catalog|tojson|safe }};
+    const discoverDestinations = {{ discover_destinations|tojson|safe }};
+    const discoverDialog = document.querySelector('#discover-dialog');
+    const confirmationDialog = document.querySelector('#itinerary-confirmation');
     const destinationDetailTranslations = {{ destination_detail_translations|tojson|safe }};
     const airfareByCountry = {{ airfare_by_country|tojson|safe }};
     const domesticFlightByDestination = {{ domestic_flight_by_destination|tojson|safe }};
@@ -1594,6 +1691,11 @@ HTML = """
       interests: {{ dialog_interests|tojson|safe }}
     };
     let activeInquiryDestination = null;
+    let activeDiscoverDestination = null;
+    let pendingDestinationSelection = null;
+    let confirmedSubmission = false;
+    let activeDiscoverCategory = 'all';
+    let showAllDiscoverDestinations = false;
     plannerMenuToggle.addEventListener('click', () => {
       const isOpen = plannerNav.classList.toggle('open');
       plannerMenuToggle.setAttribute('aria-expanded', String(isOpen));
@@ -1642,19 +1744,24 @@ HTML = """
         && returnDateInput.value > departDateInput.value;
       seasonSelect.disabled = !returnIsValid;
       const incompleteStep = firstIncompleteStep();
-      plannerSubmit.disabled = Boolean(incompleteStep);
+      plannerPreviewTrigger.hidden = Boolean(incompleteStep);
       if (plannerStepStatus) {
         plannerStepStatus.textContent = incompleteStep
           ? `Please complete Step ${[
             countrySelect, destinationSelect, departDateInput, returnDateInput, seasonSelect
-          ].indexOf(incompleteStep.field) + 1}: ${incompleteStep.label} [必須].`
+          ].indexOf(incompleteStep.field) + 1}: ${incompleteStep.label}.`
           : 'All required steps are complete. Destination information is ready.';
+        plannerStepStatus.classList.toggle('is-error', Boolean(incompleteStep));
       }
     }
 
     function clearAfterCountry() {
       destinationSelect.value = '';
       clearAfterDestination();
+      if (pendingDestinationSelection) {
+        destinationSelect.value = pendingDestinationSelection;
+        pendingDestinationSelection = null;
+      }
       syncPlannerSteps();
       if (destinationDialog.open) destinationDialog.close();
     }
@@ -1763,6 +1870,83 @@ HTML = """
       if (!destinationDialog.open) destinationDialog.showModal();
     }
 
+    function renderDiscoverDestinations() {
+      const cards = [...document.querySelectorAll('[data-discover-card]')];
+      const matchingCards = cards.filter((card) => activeDiscoverCategory === 'all'
+        || card.dataset.categories.split(/\\s+/).includes(activeDiscoverCategory));
+      cards.forEach((card) => {
+        const matchesCategory = activeDiscoverCategory === 'all'
+          || card.dataset.categories.split(/\\s+/).includes(activeDiscoverCategory);
+        const withinLimit = showAllDiscoverDestinations || matchingCards.indexOf(card) < 6;
+        card.hidden = !matchesCategory || !withinLimit;
+      });
+
+      const viewAllButton = document.querySelector('#discover-view-all');
+      viewAllButton.hidden = matchingCards.length <= 6;
+      viewAllButton.setAttribute('aria-expanded', String(showAllDiscoverDestinations));
+      viewAllButton.textContent = showAllDiscoverDestinations ? 'Show featured places' : 'View all destinations';
+    }
+
+    function openDiscoverDialog(destination) {
+      activeDiscoverDestination = destination;
+      const categoryLabels = destination.categories.map((category) => category[0].toUpperCase() + category.slice(1));
+      const image = document.querySelector('#discover-dialog-image');
+      image.src = destination.image;
+      image.alt = destination.name;
+      setPreviewValue('#discover-dialog-category', categoryLabels.join(' · ') || 'Nepal');
+      setPreviewValue('#discover-dialog-title', destination.name);
+      setPreviewValue('#discover-dialog-region', `${destination.region} Nepal · ${displayMoney(destination.daily_cost)} per day`);
+      setPreviewValue('#discover-dialog-description', destination.description);
+      discoverDialog.showModal();
+    }
+
+    document.querySelectorAll('[data-category-filter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        activeDiscoverCategory = button.dataset.categoryFilter;
+        showAllDiscoverDestinations = false;
+        document.querySelectorAll('[data-category-filter]').forEach((filterButton) => {
+          const isActive = filterButton === button;
+          filterButton.classList.toggle('is-active', isActive);
+          filterButton.setAttribute('aria-pressed', String(isActive));
+        });
+        renderDiscoverDestinations();
+      });
+    });
+
+    document.querySelector('#discover-view-all').addEventListener('click', () => {
+      showAllDiscoverDestinations = !showAllDiscoverDestinations;
+      renderDiscoverDestinations();
+    });
+    destinationGallery.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-discover-open]');
+      if (!button) return;
+      const destination = discoverDestinations.find((place) => place.name === button.dataset.discoverOpen);
+      if (destination) openDiscoverDialog(destination);
+    });
+    document.querySelector('#discover-dialog-close').addEventListener('click', () => discoverDialog.close());
+    document.querySelector('#discover-dialog-plan').addEventListener('click', () => {
+      if (!activeDiscoverDestination) return;
+      if (!countrySelect.value) {
+        pendingDestinationSelection = activeDiscoverDestination.name;
+        discoverDialog.close();
+        plannerStepStatus.textContent = 'Select your country first. The destination will be selected for you next.';
+        plannerStepStatus.classList.add('is-error');
+        plannerForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        countrySelect.focus();
+        return;
+      }
+      if (destinationSelect.value !== activeDiscoverDestination.name) {
+        destinationSelect.value = activeDiscoverDestination.name;
+        clearAfterDestination();
+      }
+      discoverDialog.close();
+      syncPlannerSteps();
+      destinationSelect.focus();
+      plannerForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    plannerPreviewTrigger.addEventListener('click', showDestinationPreview);
+
     inquiryForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const submit = inquiryForm.querySelector('button[type="submit"]');
@@ -1794,11 +1978,37 @@ HTML = """
     });
 
     plannerForm.addEventListener('submit', (event) => {
-      const incompleteStep = firstIncompleteStep();
-      if (!incompleteStep) return;
+      if (confirmedSubmission) {
+        confirmedSubmission = false;
+        return;
+      }
       event.preventDefault();
-      syncPlannerSteps();
-      incompleteStep.field.focus();
+      const incompleteStep = firstIncompleteStep();
+      if (incompleteStep) {
+        syncPlannerSteps();
+        plannerStepStatus.textContent = `Please complete Step ${[
+          countrySelect, destinationSelect, departDateInput, returnDateInput, seasonSelect
+        ].indexOf(incompleteStep.field) + 1}: ${incompleteStep.label}.`;
+        plannerStepStatus.classList.add('is-error');
+        incompleteStep.field.focus();
+        return;
+      }
+
+      setPreviewValue('#confirmation-country', countrySelect.options[countrySelect.selectedIndex].text);
+      setPreviewValue('#confirmation-destination', destinationSelect.options[destinationSelect.selectedIndex].text);
+      setPreviewValue('#confirmation-departure', departDateInput.value);
+      setPreviewValue('#confirmation-return', returnDateInput.value);
+      setPreviewValue('#confirmation-season', seasonSelect.options[seasonSelect.selectedIndex].text);
+      confirmationDialog.showModal();
+    });
+    document.querySelector('#itinerary-edit').addEventListener('click', () => {
+      confirmationDialog.close();
+      plannerSubmit.focus();
+    });
+    document.querySelector('#itinerary-confirm').addEventListener('click', () => {
+      confirmationDialog.close();
+      confirmedSubmission = true;
+      plannerForm.requestSubmit();
     });
     countrySelect.addEventListener('change', clearAfterCountry);
     destinationSelect.addEventListener('change', () => {
@@ -1813,9 +2023,9 @@ HTML = """
     });
     seasonSelect.addEventListener('change', () => {
       syncPlannerSteps();
-      showDestinationPreview();
     });
     syncPlannerSteps();
+    renderDiscoverDestinations();
     destinationDialog.addEventListener('close', () => { destinationGallery.hidden = false; });
     document.querySelector('#destination-dialog-close').addEventListener('click', () => destinationDialog.close());
     document.querySelector('#destination-dialog-close-action').addEventListener('click', () => destinationDialog.close());
@@ -1865,6 +2075,7 @@ def render_dashboard(selected_language, result=None, **form_values):
         "countries": COUNTRIES,
         "destinations": DESTINATION_CATALOG,
         "destination_catalog": DESTINATION_CATALOG,
+        "discover_destinations": DISCOVER_DESTINATIONS,
         "destination_detail_translations": DESTINATION_DETAIL_TRANSLATIONS.get(selected_language, {}),
         "airfare_by_country": COUNTRY_AIRFARE_ESTIMATES_USD,
         "domestic_flight_by_destination": DESTINATION_FLIGHT_ESTIMATES_USD,

@@ -93,6 +93,11 @@ def home():
     return serve_page("index.html")
 
 
+@pages.get("/index.html")
+def index_page():
+    return serve_page("index.html")
+
+
 @pages.get("/signin.html")
 def signin_page():
     return serve_page("signin.html")

@@ -1,10 +1,11 @@
 from datetime import date, timedelta
+import re
 import uuid
 
 import pytest
 
 from app import create_app
-from app.web_app import DESTINATION_CATALOG, NEPAL_PLACES
+from app.web_app import DESTINATION_CATALOG, DISCOVER_DESTINATIONS, NEPAL_PLACES
 
 
 @pytest.fixture
@@ -50,6 +51,7 @@ def csrf_headers(client):
 def test_homepage_and_signin_pages_load(client):
     assert client.get("/").status_code == 200
     assert b"<span class=\"brand-mark\">G</span>" in client.get("/").data
+    assert client.get("/index.html").status_code == 200
     assert client.get("/signin.html").status_code == 200
     assert client.get("/signup.html").status_code == 200
     response = client.get("/styles.css")
@@ -93,13 +95,33 @@ def test_dashboard_has_country_and_all_destination_options_without_budget_or_map
     assert b'id="trip-inquiry-form"' in response.data
     assert b'id="planner-inquiry-list"' in response.data
     assert b'name="csrf_token"' in response.data
-    assert response.data.count('class="planner-required">[必須]</span>'.encode()) == 5
+    assert "[必須]".encode() not in response.data
     assert all(f"Step {step}".encode() in response.data for step in range(1, 6))
     assert all(text.encode() in response.data for text in ("Country（国）", "Destination（目的地）", "Departure date（出発日）", "Return date（帰国日）", "Season（旅行シーズン）"))
     assert b'id="destination-preview-season"' in response.data
     assert b'id="season" name="season" required' in response.data
+    assert b'id="destination" name="destination" required disabled' in response.data
+    assert b'id="itinerary-confirmation"' in response.data
+    assert b"Edit Details" in response.data
+    assert b"Confirm &amp; Generate Itinerary" in response.data
+    assert all(f'id="confirmation-{field}"'.encode() in response.data for field in (
+        "country", "destination", "departure", "return", "season"
+    ))
     assert b"countrySelect.addEventListener('change', clearAfterCountry)" in response.data
     assert b"seasonSelect.addEventListener('change'" in response.data
+    assert all(f'data-category-filter="{category}"'.encode() in response.data for category in (
+        "all", "adventure", "nature", "culture", "trekking", "wildlife"
+    ))
+    assert b"View all destinations" in response.data
+    assert b"Explore destination" in response.data
+    image_urls = re.findall(
+        rb'<article class="planner-place-card"[^>]*>.*?<img src="([^"]+)"',
+        response.data,
+        re.DOTALL,
+    )
+    assert len(image_urls) == len(DISCOVER_DESTINATIONS)
+    assert len(image_urls) == len(set(image_urls))
+    assert all(place["categories"] for place in DISCOVER_DESTINATIONS)
 
 
 def test_destination_images_are_available():

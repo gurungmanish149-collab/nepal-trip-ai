@@ -478,3 +478,133 @@ button:disabled { cursor: not-allowed; opacity: .62; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
   .js-scroll .reveal { opacity: 1; transform: none; }
 }
+
+/* Dashboard trip planner and destination discovery */
+.planner-page .planner-form { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.planner-page .planner-field { border-right: 1px solid var(--line); }
+.planner-page .planner-field:nth-of-type(5n) { border-right: 0; }
+.planner-page .planner-step-status.is-error { color: #9c3e32; }
+.planner-page .planner-preview-trigger {
+  grid-column: 1 / -1;
+  justify-self: end;
+  padding: 8px 12px;
+  color: #74521c;
+  background: #fff8ed;
+  border: 1px solid #e8d3ad;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.planner-page .planner-preview-trigger:hover { background: #f7ebd5; }
+.planner-page .planner-places { margin-top: 66px; }
+.planner-page .planner-places-heading h2 { font-size: clamp(2.2rem, 4vw, 3rem); }
+.planner-page .planner-places-intro { max-width: 470px; margin: 14px 0 0; color: #697975; font-size: 13px; line-height: 1.65; }
+.planner-page .discover-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 26px 0 20px; }
+.planner-page .discover-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.planner-page .discover-filter {
+  padding: 9px 14px;
+  color: #53645f;
+  background: #f2f5f1;
+  border: 1px solid #dce4dd;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: color .2s ease, background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.planner-page .discover-filter:hover { transform: translateY(-1px); border-color: #bd8030; }
+.planner-page .discover-filter.is-active { color: #fff; background: #16484a; border-color: #16484a; }
+.planner-page .discover-view-all { padding: 10px 0; color: #8e6326; background: transparent; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.planner-page .discover-view-all:hover { color: #16484a; }
+.planner-page .planner-places-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.planner-page .planner-place-card {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e1e7e1;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(16, 45, 50, .06);
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+.planner-page .planner-place-card:hover { transform: translateY(-5px); border-color: #d3b77f; box-shadow: 0 18px 34px rgba(16, 45, 50, .14); }
+.planner-page .planner-place-card[hidden] { display: none; }
+.planner-page .planner-place-image { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: #e2eae3; }
+.planner-page .planner-place-image img { width: 100%; height: 100%; aspect-ratio: auto; object-fit: cover; transition: transform .65s cubic-bezier(.2,.8,.2,1); }
+.planner-page .planner-place-card:hover .planner-place-image img { transform: scale(1.07); }
+.planner-page .planner-place-region { position: absolute; right: 12px; bottom: 12px; padding: 6px 9px; color: #fff; background: rgba(8, 37, 39, .78); border-radius: 999px; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.planner-page .planner-place-body { padding: 17px 18px 19px; }
+.planner-page .planner-place-categories { display: flex; flex-wrap: wrap; gap: 6px; min-height: 20px; }
+.planner-page .planner-place-categories span { padding: 4px 8px; color: #76551e; background: #f8f0df; border-radius: 999px; font-size: 9px; font-weight: 700; }
+.planner-page .planner-place-body h3 { margin: 11px 0 7px; color: var(--ink); font-family: 'Playfair Display', Georgia, serif; font-size: 21px; font-weight: 500; line-height: 1.15; }
+.planner-page .planner-place-body p { min-height: 42px; margin: 0; color: #6a7975; font-size: 11px; line-height: 1.6; }
+.planner-page .planner-place-explore { display: inline-flex; align-items: center; gap: 9px; margin-top: 15px; padding: 0; color: #805a20; background: transparent; font-size: 11px; font-weight: 700; }
+.planner-page .planner-place-explore span { font-size: 15px; transition: transform .2s ease; }
+.planner-page .planner-place-explore:hover { color: var(--forest); }
+.planner-page .planner-place-explore:hover span { transform: translate(2px, -2px); }
+.planner-page .discover-dialog,
+.planner-page .itinerary-confirmation {
+  width: min(680px, calc(100% - 32px));
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: auto;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid rgba(16, 45, 50, .15);
+  border-radius: 20px;
+  box-shadow: 0 28px 90px rgba(6, 29, 30, .3);
+}
+.planner-page .discover-dialog::backdrop,
+.planner-page .itinerary-confirmation::backdrop { background: rgba(6, 29, 30, .68); backdrop-filter: blur(4px); }
+.planner-page .discover-dialog-image { width: 100%; height: 270px; object-fit: cover; }
+.planner-page .discover-dialog-content { padding: 25px 30px 30px; }
+.planner-page .discover-dialog-content h2 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 2.7rem); line-height: 1.05; letter-spacing: -1px; }
+.planner-page .discover-dialog-content .eyebrow { margin-bottom: 12px; }
+.planner-page .discover-dialog-region { margin: 0 0 14px; color: #8c662c; font-size: 11px; font-weight: 700; }
+.planner-page .discover-dialog-description { margin: 0 0 22px; color: #64746f; font-size: 13px; line-height: 1.7; }
+.planner-page .itinerary-confirmation { width: min(620px, calc(100% - 32px)); }
+.planner-page .itinerary-confirmation-content { padding: 34px; }
+.planner-page .itinerary-confirmation-content .eyebrow { margin-bottom: 13px; }
+.planner-page .itinerary-confirmation-content h2 { font-size: clamp(2rem, 5vw, 2.8rem); line-height: 1.05; letter-spacing: -1px; }
+.planner-page .itinerary-confirmation-intro { margin: 13px 0 22px; color: #687975; font-size: 12px; line-height: 1.6; }
+.planner-page .itinerary-confirmation-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.planner-page .itinerary-confirmation-details div { min-width: 0; padding: 13px 14px; background: #f0f4ef; border: 1px solid #e0e7e0; border-radius: 10px; }
+.planner-page .itinerary-confirmation-details div:last-child { grid-column: 1 / -1; }
+.planner-page .itinerary-confirmation-details dt { color: #77847f; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.planner-page .itinerary-confirmation-details dd { margin: 5px 0 0; color: var(--ink); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+.planner-page .itinerary-confirmation-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.planner-page .itinerary-edit,
+.planner-page .itinerary-confirm { min-height: 45px; padding: 0 16px; border-radius: 8px; font-size: 11px; font-weight: 700; }
+.planner-page .itinerary-edit { color: var(--ink); background: #fff; border: 1px solid #d4ddd5; }
+.planner-page .itinerary-edit:hover { background: #edf2ed; }
+.planner-page .itinerary-confirm { color: var(--ink); background: var(--saffron); }
+.planner-page .itinerary-confirm:hover { background: #f5c269; }
+
+@media (max-width: 1050px) {
+  .planner-page .planner-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .planner-page .planner-field:nth-of-type(3n) { border-right: 0; }
+  .planner-page .planner-field:nth-of-type(5n) { border-right: 1px solid var(--line); }
+  .planner-page .planner-places-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .planner-page .planner-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .planner-page .planner-field:nth-of-type(3n) { border-right: 1px solid var(--line); }
+  .planner-page .planner-field:nth-of-type(2n) { border-right: 0; }
+  .planner-page .planner-places { margin-top: 48px; }
+  .planner-page .discover-toolbar { align-items: flex-start; flex-direction: column; }
+  .planner-page .discover-filters { flex-wrap: nowrap; width: 100%; padding: 2px 0 8px; overflow-x: auto; }
+  .planner-page .discover-filter { flex: 0 0 auto; }
+}
+@media (max-width: 520px) {
+  .planner-page .planner-form { grid-template-columns: minmax(0, 1fr); }
+  .planner-page .planner-field,
+  .planner-page .planner-field:nth-of-type(2n),
+  .planner-page .planner-field:nth-of-type(3n),
+  .planner-page .planner-field:nth-of-type(5n) { border-right: 0; }
+  .planner-page .planner-places-grid { grid-template-columns: minmax(0, 1fr); }
+  .planner-page .planner-place-body p { min-height: 0; }
+  .planner-page .itinerary-confirmation-content { padding: 25px 20px; }
+  .planner-page .itinerary-confirmation-actions { flex-direction: column-reverse; }
+  .planner-page .itinerary-edit,
+  .planner-page .itinerary-confirm { width: 100%; }
+}
